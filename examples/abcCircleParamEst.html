@@ -1,0 +1,321 @@
+<html>
+  <head>
+    <script src="../src/distributions.js"></script>
+    <script src="../src/histogram.js"></script>
+    <script src="../src/list.js"></script>
+    <script>
+        
+        // constructs a circle
+        function Circle(x, y, radius) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+        }
+        
+        // determines whether a point is whithin a circle
+        var isPointInCircle = function(x, y, circle) {
+            var dx = x - circle.x;
+            var dy = y - circle.y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < circle.radius) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+        
+        // samples the pixels whithin an image.
+        var createTargetImage = function(width, height, target, count) {
+            var xs = Distributions.createUniform(0, width - 1);
+            var ys = Distributions.createUniform(0, height - 1);
+            var result = [];
+            for(var i = 0; i < count; i++) {
+                var x = xs.sample();
+                var y = ys.sample();
+                result.push({
+                    "x": x,
+                    "y": y,
+                    "in": isPointInCircle(x, y, target)
+                });
+            }
+            return result;
+        };
+        
+        // measures the distance between the target and a 
+        // hypothetical circle
+        var compare = function(targetImage, circle) {
+            var dist = 0;
+            var isIn = false;
+            var len = targetImage.length;
+            for(var i = 0; i < len; i++) {;
+                isIn = isPointInCircle(
+                    targetImage[i].x, 
+                    targetImage[i].y, 
+                    circle);
+                if (isIn != targetImage[i].in) {
+                    dist++;
+                }
+            }
+            return dist;
+        };
+        
+        // constructor for a sample from the posterior
+        function Sample(x, y, radius, distance) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.distance = distance;
+        }
+        
+        // creates initiol samples from the prior distribution
+        var initializeSamples = function(priors, data, count) {
+            console.log("simulating");
+        
+            var samples = List.create();
+            var x = 0.0;
+            var y = 0.0;
+            var radius = 0.0;
+            var distance = 0.0;
+            for (var i = 0; i < count; i++) {
+                
+                // sample priors
+                x = priors.x.sample();
+                y = priors.y.sample();
+                radius = priors.radius.sample();
+                var params = new Circle(x, y, radius);
+                
+                // compare generated data to actual data
+                distance = compare(data, params);
+                var sample = new Sample(x, y, radius, distance);
+                samples = samples.prepend(sample);
+            }
+            return samples;
+        };
+
+      var mapToRange = function(min1, max1, min2, max2, value) {
+        var p =  (value - min1) / (max1 - min1);
+        var l = max2 - min2;
+        return min2 + p * l;
+      }
+
+      var drawDensity = function(canvas, data, bins) {
+        console.log("drawing");
+        var histogram = Histogram.toDensity(Histogram.create(data, bins));
+        var context = canvas.getContext('2d');
+        var width = canvas.width;
+        var height = canvas.height;
+        var gapx = 2;
+        context.fillStyle = "gray";
+        context.fillRect(0,0,width, height);
+        var minx = histogram[0].min;
+        var miny = 0;
+        var maxx = histogram[histogram.length - 1].max;
+        var maxy = histogram.reduce(function(a,b) { 
+            return Math.max(a, b.count); 
+        }, histogram[0].count) * 1.1;
+        for (var i = 0; i < histogram.length; i++) {
+          var x1 = mapToRange(minx, maxx, 0, width, histogram[i].min) + gapx;
+          var y1 = height - mapToRange(miny, maxy, 0, height, histogram[i].count);
+          var x2 = mapToRange(minx, maxx, 0, width, histogram[i].max) - gapx;
+          var y2 = height - mapToRange(miny, maxy, 0, height, 0);
+          context.fillStyle = "white";
+          context.sgrokeStyle = "black";
+          context.fillRect(x1, y1, x2 - x1, y2);
+          context.strokeRect(x1, y1, x2 - x1, y2);
+        }
+      };
+        
+        var drawDistributions = function(samples) {
+            var bins = 21;
+            var xCanvas = document.getElementById('xDensityDisplay');
+            var xSamples = samples.map(function(x) { return x.x; });
+            drawDensity(xCanvas, xSamples, bins);
+
+            var yCanvas = document.getElementById('yDensityDisplay');
+            var ySamples = samples.map(function(x) { return x.y; });
+            drawDensity(yCanvas, ySamples, bins);
+
+            var rCanvas = document.getElementById('radiusDensityDisplay');
+            var rSamples = samples.map(function(x) { return x.radius; });
+            drawDensity(rCanvas, rSamples, bins);
+
+            var distCanvas = document.getElementById('distanceDisplay');
+            var distSamples = samples.map(function(x) { return x.distance; });
+            drawDensity(distCanvas, distSamples, bins);
+            
+            var minItem = samples.reduce(function(a,b) { 
+                if (a.distance < b.distance) {
+                    return a;
+                } else {
+                    return b;
+                }
+            }, samples.value);
+            
+            var maxItem = samples.reduce(function(a,b) { 
+                if (a.distance > b.distance) {
+                    return a;
+                } else {
+                    return b;
+                }
+            }, samples.value);
+            
+            var minDistLabel = document.getElementById('minDistance');
+            minDistLabel.innerHTML = "Minimum Distance " + minItem.distance;
+            
+            var maxDistLabel = document.getElementById('maxDistance');
+            maxDistLabel.innerHTML = "Maximum Distance " + maxItem.distance;
+            
+            var xLabel = document.getElementById("x");
+            xLabel.innerHTML = "Max Likelyhood X " + minItem.x;
+            
+            var yLabel = document.getElementById("y");
+            yLabel.innerHTML = "Max Likelyhood Y " + minItem.y;
+            
+            var radiusLabel = document.getElementById("radius");
+            radiusLabel.innerHTML = "Max Likelyhood Radius " + minItem.radius;
+            
+            var imageCanvas = document.getElementById("imageDisplay");
+            var ctx = imageCanvas.getContext('2d');
+            ctx.strokeStyle = "black";
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, imageCanvas.width, imageCanvas.height);
+           
+            var drawSample = function(s) {
+                ctx.beginPath();
+                ctx.ellipse(
+                    s.x, 
+                    s.y, 
+                    s.radius, 
+                    s.radius,
+                    0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            var top = samples.sort(function(a,b) {
+                return a.distance - b.distance;
+            }).take(200).map(drawSample);
+                
+        };
+        
+        var pruneSamples = function(samples) {
+            var sorted = samples.sort(function(a, b) {
+                return a.distance - b.distance;
+            });
+            var threshold = Math.floor(samples.count() * .25);
+            return sorted.take(threshold);
+        };
+        
+        var perturb = function(sample) {
+            return new Circle(
+                sample.x + (Math.random() - .5) * 80, 
+                sample.y + (Math.random() - .5) * 80,
+                sample.radius + (Math.random() - .5) * 10
+            );
+        };
+        
+        var priorProbability = function(params, priors) {
+            return priors.x.densityAt(params.x) * 
+                priors.y.densityAt(params.y) *
+                priors.radius.densityAt(params.radius);
+        };
+        
+        var resample = function(samples, count, priors, data, schedule) {
+            var pruned = pruneSamples(samples);
+            var threshold = pruned.reduce(
+                function(a,b) { return Math.max(a, b.distance); }, 
+                pruned.value.distance);
+            var prunedCount = pruned.count();
+            var newSamples = List.create();
+            for (var i = 0; i < count; i++) {
+                var index = Math.floor(Math.random() * prunedCount);
+                var oldSample = pruned.at(index);
+                var oldPrior = priorProbability(oldSample, priors);
+                var newParams = perturb(oldSample);
+                var newPrior = priorProbability(newParams, priors);
+                if (Math.random() < newPrior / oldPrior) {
+                    var newDistance = compare(data, newParams);
+                    if (newDistance <= threshold) {
+                        newSamples = newSamples.prepend(new Sample(
+                            newParams.x,
+                            newParams.y,
+                            newParams.radius,
+                            newDistance
+                        ));
+                    } else {
+                        newSamples = newSamples.prepend(oldSample);
+                    }
+                } else {
+                    newSamples = newSamples.prepend(oldSample);
+                }
+            }
+            drawDistributions(newSamples);
+            var newSchedule; 
+            if (schedule.next.isEmpty()) {
+                newSchedule = schedule;
+            } else {
+                newSchedule = schedule.next;
+            }
+            setTimeout(function() {
+                resample(
+                    newSamples, 
+                    count, 
+                    priors, 
+                    data, 
+                    newSchedule);  
+            }, 10);
+        };
+        
+        var scheduleThresholds = function() {
+            var schedule = List.create();
+            for(var i = 700; i > 50; i = i - 50) {
+                schedule = schedule.prepend(i);
+            }
+            return schedule;
+        };
+        
+        var body_load = function() {
+            var count = 1000;
+            var imageWidth = 640;
+            var imageHeight = 480;
+            var priors = {
+              x: Distributions.createUniform(0, imageWidth - 1),
+              y: Distributions.createUniform(0, imageHeight - 1),
+              radius: Distributions.createTriangle(2, 20, 640)
+            };
+            var target = new Circle(
+                Math.random() * 640,
+                Math.random() * 480, 
+                Math.random() * 100 + 5);
+            var targetImage = createTargetImage(
+                imageWidth, 
+                imageHeight, 
+                target, 
+                10000);
+            var samples = initializeSamples(priors, targetImage, count);
+            var schedule = scheduleThresholds();
+            drawDistributions(samples);
+            setTimeout(function() {
+                resample(
+                    samples, 
+                    count, 
+                    priors, 
+                    targetImage, 
+                    schedule);  
+            }, 10);
+        };
+
+    </script>
+  </head>
+  <body onload="body_load()">
+      <canvas id="xDensityDisplay" width="640", height="240"></canvas>
+      <canvas id="yDensityDisplay" width="640", height="240"></canvas>
+      <canvas id="radiusDensityDisplay" width="640", height="240"></canvas>
+      <canvas id="distanceDisplay" width="640", height="240"></canvas><br>
+      <canvas id="imageDisplay" width="640", height="480"></canvas><br>
+      <label id="minDistance">Min Distance</label><br>
+      <label id="maxDistance">Max Distance</label><br>
+      <label id="x">MLx </label><br>
+      <label id="y">MLy</label><br>
+      <label id="radius">MLradius</label><br>
+    </body>
+</html>

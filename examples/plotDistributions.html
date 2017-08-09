@@ -1,0 +1,61 @@
+<html>
+  <head>
+    <script src="../src/distributions.js"></script>
+    <script src="../src/histogram.js"></script>
+    <script>
+
+      var simulate = function(count) {
+          console.log("simulating");
+          //var distribution = Distributions.createUniform(-1, 1);
+          //var distribution = Distributions.createBernoulli(.75);
+          var distribution = Distributions.createTriangle(-1, 0, 1);
+          return distribution.sampleMany(count);
+      };
+
+      var mapToRange = function(min1, max1, min2, max2, value) {
+        var p =  (value - min1) / (max1 - min1);
+        var l = max2 - min2;
+        return min2 + p * l;
+      }
+
+      var draw = function(samples) {
+        console.log("drawing");
+        var bins = 11;
+        var histogram = Histogram.toDensity(Histogram.create(samples, bins));
+        var canvas = document.getElementById('display');
+        var context = canvas.getContext('2d');
+        var width = canvas.width;
+        var height = canvas.height;
+        var gapx = 2;
+        context.fillStyle = "gray";
+        context.fillRect(0,0,width, height);
+        var minx = histogram[0].min;
+        var miny = 0;
+        var maxx = histogram[histogram.length - 1].max;
+        var maxy = histogram.reduce(function(a,b) { 
+            return Math.max(a, b.count); 
+        }, histogram[0].count) * 1.1;
+        for (var i = 0; i < histogram.length; i++) {
+          var x1 = mapToRange(minx, maxx, 0, width, histogram[i].min) + gapx;
+          var y1 = height - mapToRange(miny, maxy, 0, height, histogram[i].count);
+          var x2 = mapToRange(minx, maxx, 0, width, histogram[i].max) - gapx;
+          var y2 = height - mapToRange(miny, maxy, 0, height, 0);
+          context.fillStyle = "white";
+          context.sgrokeStyle = "black";
+          context.fillRect(x1, y1, x2 - x1, y2);
+          context.strokeRect(x1, y1, x2 - x1, y2);
+        }
+      };
+
+      var body_load = function() {
+        var count = 10000;
+        var samples = simulate(count);
+        draw(samples);
+      };
+
+    </script>
+  </head>
+  <body onload="body_load()">
+    <canvas id="display" width="640", height="240" />
+  </body>
+</html>
