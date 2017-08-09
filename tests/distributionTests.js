@@ -1,3 +1,5 @@
+QUnit.module("Distributions", function() {
+
 
     QUnit.test("Create Bernoulli", function( assert ) {
 		var bernoulli = Distributions.createBernoulli(.75);
@@ -61,5 +63,7 @@
                    "The probablity of a value higher end should be zero.");
      assert.equal(triangle.densityAt(1), .4,
                   "The probablity of a value between start and end must be greater than zero.");
+
+});
 
 });
