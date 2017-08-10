@@ -21,8 +21,7 @@ QUnit.module("Distributions", function() {
                      "Given a value of true then the probability of sampling that value is 'p'.");
         assert.equal(bernoulli.densityAt(false), .25,
                      "Given a value of true then the probability of sampling that value is '1 - p'.");
-
-	});
+    });
 
   QUnit.test("Create Uniform", function( assert ) {
   var uniform = Distributions.createUniform(-2, 3);
@@ -42,7 +41,7 @@ QUnit.module("Distributions", function() {
      assert.equal(uniform.densityAt(-1) * (uniform.end - uniform.start), 1,
                   "The probablity of a value between start and end times the length of the interval should be one.");
 
-});
+  });
 
   QUnit.test("Create Triangle", function( assert ) {
   var triangle = Distributions.createTriangle(-2, 1, 3);
@@ -64,6 +63,6 @@ QUnit.module("Distributions", function() {
      assert.equal(triangle.densityAt(1), .4,
                   "The probablity of a value between start and end must be greater than zero.");
 
-});
+  });
 
 });

@@ -1,4 +1,3 @@
-
 QUnit.module("List", function() {
 
     QUnit.test("Construct list", function( assert ) {
@@ -28,10 +27,7 @@ QUnit.module("List", function() {
             .prepend(2)
             .prepend(3);
 
-        var greaterThanOne = function(x) {
-            return x > 1;
-        }
-
+        var greaterThanOne = function(x) { return x > 1; }
         var result = list.filter(greaterThanOne);
 
         var current = result;
@@ -75,7 +71,6 @@ QUnit.module("List", function() {
             .prepend(3);
 
         var list2 = List.create();
-
         var result = list1.concat(list2);
 
         var current = result;
