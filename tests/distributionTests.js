@@ -64,5 +64,45 @@ QUnit.module("Distributions", function() {
                   "The probablity of a value between start and end must be greater than zero.");
 
   });
+    
+    var round = function(number, decimals) {
+        var scale = Math.pow(10, decimals);
+        return Math.round(number * scale) / scale;
+    };
+    
+    QUnit.test("Create Binomial", function( assert ) {
+        var distribution = Distributions.createBinomial(6, .3);
+        assert.notStrictEqual(distribution, undefined, "Binomial must be defined");
+
+        assert.equal(distribution.trials, 6, "Parameter 'trials' must be set");
+        assert.equal(distribution.rate, .3, "Parameter 'rate' must be set");
+
+        var samples = distribution
+            .sampleMany(1000)
+            .filter(function(x) { return x !== undefined; });
+        assert.equal(samples.length, 1000, "The number of samples asked for must exist");
+        
+        var round4 = function(n) { return round(n, 4); };
+        
+        assert.equal(round4(distribution.densityAt(0)), .1176);
+        assert.equal(round4(distribution.densityAt(1)), .3025);
+        assert.equal(round4(distribution.densityAt(2)), .3241);
+        assert.equal(round4(distribution.densityAt(3)), .1852);
+        assert.equal(round4(distribution.densityAt(4)), .0595);
+        assert.equal(round4(distribution.densityAt(5)), .0102);
+    });
+    
+    QUnit.test("factorial", function( assert ) {
+       assert.equal(Distributions.factorial(4), 4*3*2*1); 
+    });
+    
+    
+    QUnit.test("choose", function( assert ) {
+        assert.equal(Distributions.choose(4, 4), 1); 
+        assert.equal(Distributions.choose(4, 3), 4); 
+        assert.equal(Distributions.choose(4, 2), 6); 
+        assert.equal(Distributions.choose(4, 1), 4); 
+        assert.equal(Distributions.choose(4, 0), 1); 
+    });
 
 });

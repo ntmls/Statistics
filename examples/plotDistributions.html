@@ -17,11 +17,11 @@
             var height = canvas.height;
             var gapx = 2;
             context.fillStyle = "gray";
-            context.fillRect(0,0,width, height);
+            context.fillRect(0, 0, width, height);
             var minx = histogram[0].min;
             var miny = 0;
             var maxx = histogram[histogram.length - 1].max;
-            var maxy = histogram.reduce(function(a,b) { 
+            var maxy = histogram.reduce(function(a, b) { 
                 return Math.max(a, b.count); 
             }, histogram[0].count) * 1.1;
             for (var i = 0; i < histogram.length; i++) {
@@ -57,6 +57,12 @@
           samples = distribution.sampleMany(count);
           canvas = document.getElementById("displayTriangle");
           drawDensity(canvas, samples, 15);
+          
+          // Binomial distribution
+          distribution = Distributions.createBinomial(15, .33);
+          samples = distribution.sampleMany(count);
+          canvas = document.getElementById("displayBinomial");
+          drawDensity(canvas, samples, 15);
       };
 
     </script>
@@ -65,5 +71,6 @@
       <canvas id="displayBernoulli" width="640", height="240" ></canvas>
       <canvas id="displayUniform" width="640", height="240" ></canvas>
       <canvas id="displayTriangle" width="640", height="240" ></canvas>
+      <canvas id="displayBinomial" width="640", height="240" ></canvas>
   </body>
 </html>
