@@ -87,6 +87,16 @@ var List = function() {
         return result;  
     };
     
+    ListNode.prototype.fmap = function(f) {
+        var current = this;
+        var result = create();
+        while (!current.isEmpty()) {
+            result = result.concat(f(current.value));
+            current = current.next;   
+        }
+        return result;  
+    };
+    
     ListNode.prototype.reduce = function(f, initial) {
         var accumulator = initial;
         var current = this;
@@ -123,8 +133,14 @@ var List = function() {
         return new ListNode(undefined, null);
     };
     
+    var lift = function(value) {
+        return new ListNode(undefined, null)
+            .prepend(value);
+    };
+    
     var exports = {
-        create: create
+        create: create,
+        lift: lift
     };
     
     return exports;

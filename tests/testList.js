@@ -190,7 +190,24 @@ QUnit.module("List", function() {
         assert.equal(result.at(1), 5, "The value at index 1 should be 5");
         assert.equal(result.at(2), 3, "The value at index 2 should be 3");
         assert.equal(result.at(3), undefined, "The value at index 4 should be undefined");
-
     });
     
+    QUnit.test("Flat Map", function( assert ) {
+        var list1 = List.create()
+            .prepend(1)
+            .prepend(2);
+        var list2 = List.create()
+            .prepend(3)
+            .prepend(4);
+        var result = list1.fmap(function(a) {
+            return list2.fmap(function(b) {
+                return List.lift(a + b);
+            });
+        });
+        assert.equal(result.at(0), 5);
+        assert.equal(result.at(1), 4);
+        assert.equal(result.at(2), 6);
+        assert.equal(result.at(3), 5);
+        assert.equal(result.at(4), undefined);
+    });
 });
