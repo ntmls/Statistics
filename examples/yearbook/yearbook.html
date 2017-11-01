@@ -1,0 +1,256 @@
+<html>
+  <head>
+    <script src="../../src/distributions.js"></script>
+    <script src="../../src/histogram.js"></script>
+    <script src="../../src/list.js"></script>
+    <script src="fun.js"></script>
+    <script src="model.js"></script>
+    <script src="smc.js"></script>
+    <script>
+        
+        let errorTraceState = {
+            width: 500,
+            height: 100,
+            iteration: 0,
+            index: 0,
+            errors: [],
+            firstError: 0
+        };
+        
+        let drawPoints = function(context) {
+            return function(points) {
+                context.beginPath();
+                for(let i = 0; i < points.length; i++) {
+                    context.moveTo(points[i].x, points[i].y);
+                    context.lineTo(points[i].x + 1, points[i].y + 1);
+                }
+                context.stroke();
+                return points;
+            };
+        };
+        
+        let updateErrorState = function(models) {
+            errorTraceState.iteration += 1;
+            errorTraceState.index += 1;
+            if (errorTraceState.index > errorTraceState.width) {
+                errorTraceState.index = 0;
+            }
+            errorTraceState.errors = models.map(function(x) { return x.distance; });
+            errorTraceState.maxError = errorTraceState.errors.reduce(function(a,b) {
+                    return Math.max(a, b);
+                }, 0);
+            errorTraceState.minError = errorTraceState.errors.reduce(function(a,b) {
+                    return Math.min(a, b);
+                }, errorTraceState.errors[0]);
+            if (errorTraceState.firstError == 0) {
+                errorTraceState.firstError = errorTraceState.maxError;
+            }
+        };
+        
+        let drawErrorState = function(errorTraceState) {
+            let canvas = document.getElementById("errorTrace");
+            let ctx = canvas.getContext('2d');
+            ctx.strokeStyle = "black";
+            ctx.fillStyle = "white";
+            ctx.fillRect(errorTraceState.index,0, 2, errorTraceState.height);
+            ctx.beginPath();
+            for(let i = 0; i < errorTraceState.errors.length; i++) {
+                let v = (errorTraceState.errors[i] / errorTraceState.firstError) * errorTraceState.height;
+                ctx.moveTo(errorTraceState.index, v);
+                ctx.lineTo(errorTraceState.index + 1, v);
+            }
+            ctx.stroke();
+            let minErrorElem = document.getElementById('minDistance');
+            minErrorElem.innerHTML = errorTraceState.minError;
+            let maxErrorElem = document.getElementById('maxDistance');
+            maxErrorElem.innerHTML = errorTraceState.maxError;
+        };
+        
+        let render = function(image, imageSamples, models) {
+            let canvas = document.getElementById("displayCanvas");
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            
+            //sort models by distance
+            sorted = models.sort(function(a, b) {
+               return a.distance - b.distance;
+            });
+            
+            // modwls
+            ctx.beginPath();
+            ctx.strokeStyle = "yellow";
+            ctx.lineWidth = "1";
+            //for (let i = 0; i < models.length; i++) {
+            let top = 1;
+            for (let i = 0; i < Math.min(top, models.length); i++) {
+                let model = models[i].model;
+                for (let j = 0; j < model.length; j++) {
+                    let r = model[j];
+                    ctx.rect(r.point.x, r.point.y, r.width,r.height);
+                }
+            };
+            ctx.stroke();
+            
+            // image samples
+            let toPoint = function(x) { return x.point; };
+            let bgColor = new Color(250, 250, 250);
+            let isBg = function(x) { return isBackGroundColor(bgColor)(x.color); };
+            let isNotBg = function(x) { return !isBackGroundColor(bgColor)(x.color); };
+            let ins = imageSamples.filter(isBg);
+            ctx.strokeStyle = "blue";
+            drawPoints(ctx)(ins.map(toPoint));
+            let outs = imageSamples.filter(isNotBg);
+            ctx.strokeStyle = "red";
+            drawPoints(ctx)(outs.map(toPoint));
+            
+            // error trace
+            updateErrorState(models);
+            drawErrorState(errorTraceState);
+            
+        };
+        
+        
+        let sampleFromWeighted = function(samples) {
+            let r = Math.random();
+            let sum = 0;
+            let count = samples.length;
+            for (let i = 0; i < count; i++) {
+                sum = sum + samples[i].weight;
+                if (r <= sum) {
+                    return samples[i];
+                }
+            }
+            return samples[count - 1];
+        };
+        
+        let sortByWeight = function(samples) {
+            let sorted = samples.sort(function(a, b) {
+                return b.weight - a.weight;
+            });
+            return sorted;
+        }; 
+        
+        let normalizeWeights = function(samples) {
+            let weights = samples.map(function(x) { 
+                return x.weight; 
+            });  
+            let sum = weights.reduce(add, 0);
+            return samples.map(function(x) {
+                return {
+                    parameters: x.parameters, 
+                    model: x.model,
+                    distance: x.distance,
+                    weight: x.weight / sum
+                };
+            });
+        };
+        
+        var resample = function(
+            oldSamples, count, priors, imageSamples, image, scheduler, threshold) {
+            
+            let newSamples = [];
+            let i = 0;
+            let rejectCount = 0;
+            let maxDist = 0;
+            while (i < count) {
+                let oldSample = sampleFromWeighted(oldSamples);
+                let move = getMove(oldSample.parameters);
+                let newParams = moveParameters(oldSample.parameters, move);
+                let priorProb = priorProbabilityOf(priors)(newParams);
+                let importanceProb = probabilityOfSample(oldSamples, newParams);
+                let newModel = generateModel(newParams);
+                let newDistance = compare(imageSamples, newModel);
+                
+                if (newDistance <= threshold &&
+                    priorProb > 0 &&
+                    importanceProb > 0) 
+                {
+                    let newWeight = priorProb / importanceProb; 
+                    let newSample = {
+                        parameters: newParams,
+                        model: newModel,
+                        distance: newDistance,
+                        weight: newWeight
+                    };
+                    newSamples.push(newSample);
+                    i = i + 1;
+                    
+                    // keep track of the maximum distance so we can take a shortcut
+                    // and jump to it if it is lower than the next scheduled distance       
+                    maxDist = Math.max(newDistance, maxDist);
+
+                } else {
+                    rejectCount = rejectCount + 1;
+                    if (rejectCount > 5000) {
+                        throw "stuck";
+                    }
+                }
+            }
+            render(image, imageSamples, newSamples);
+            if (!scheduler.stop(threshold)) {
+                setTimeout(function() {
+                    resample(
+                        sortByWeight(normalizeWeights(newSamples)), 
+                        count, 
+                        priors, 
+                        imageSamples,
+                        image, 
+                        scheduler, 
+                        scheduler.next(threshold, maxDist)); 
+                }, 0);    
+            }
+        };
+        
+        let begin = function(image) {
+            var count = 200;
+            let imageData = getImageData(image);
+            let imageSamples = sampleImage(imageData, 10000);
+            let priors = getPriors(imageData.width, imageData.height);  
+            let samples = initializeSamples(priors, imageSamples, count);
+            /*
+            let maxDistance = samples.reduce(function(a,b) {
+                return Math.max(a, b.distance); 
+            }, 0);
+            */
+            let scheduler = scheduleThresholdsByPercentage(400000, 1000, .99);
+            
+            // render(image, imageSamples, samples);
+            setTimeout(function() {
+                resample(
+                    normalizeWeights(samples), 
+                    count, 
+                    priors, 
+                    imageSamples,
+                    image, 
+                    scheduler, 
+                    scheduler.init); 
+            }, 0);
+        };
+        
+        let resetErrorTrace = function() {
+            errorTraceState.firstError = 0;
+        };
+
+    </script>
+  </head>
+    <body>
+        <canvas id="displayCanvas"></canvas><br>
+        <canvas id="errorTrace" width="500" height="100"></canvas><br>
+        
+        <label id="minDistance">Min Distance</label><br>
+        <label id="maxDistance">Max Distance</label><br>
+        <button onclick="resetErrorTrace()">Reset Error Trace</button>
+        <script>
+            let canvas = document.getElementById("displayCanvas");
+            let ctx = canvas.getContext('2d');
+            let img = new Image();
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                begin(img);
+            };
+            img.src = "pg1.jpg";
+        </script>
+    </body>
+</html>

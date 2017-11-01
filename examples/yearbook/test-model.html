@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Test Runner</title>
+	<link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.3.3.css">
+	<script src="https://code.jquery.com/qunit/qunit-2.3.3.js"></script>
+    <script src="fun.js"></script>
+    <script src="model.js"></script>
+    <script>
+
+        QUnit.test("Point constructor)", function(assert) {
+            let result = new Point(-1, 2); 
+            assert.equal(result.x, -1);
+            assert.equal(result.y, 2);
+        });
+        
+        QUnit.test("shiftPointRight", function(assert) {
+            let pt = new Point(1,1); 
+            let result = shiftPointRight(2)(pt);
+            assert.equal(result.x, 3);
+            assert.equal(result.y, 1);
+        });
+        
+        QUnit.test("shiftPointDown", function(assert) {
+            let pt = new Point(1,1); 
+            let result = shiftPointDown(2)(pt);
+            assert.equal(result.x, 1);
+            assert.equal(result.y, 3);
+        });
+        
+        QUnit.test("numberToPoint", function(assert) {
+            let result = numberToPoint(10);
+            assert.equal(result.x, 10);
+            assert.equal(result.y, 0);
+        });
+        
+        QUnit.test("Rect Constructor", function(assert) {
+            let point = new Point(10,20); 
+            let rect = new Rect(point, 100, 200);
+            assert.equal(rect.point.x, 10);
+            assert.equal(rect.point.y, 20);
+            assert.equal(rect.width, 100);
+            assert.equal(rect.height, 200);
+        });
+        
+        QUnit.test("tranlateRect", function(assert) {
+            let point = new Point(10,20); 
+            let rect = new Rect(point, 100, 200);
+            let result = translateRect(shiftPointDown(50))(rect);
+            assert.equal(result.point.x, 10);
+            assert.equal(result.point.y, 70);
+            assert.equal(result.width, 100);
+            assert.equal(result.height, 200);
+        });
+        
+        QUnit.test("pointToRect", function(assert) {
+            let point = new Point(10,20);
+            let result = pointToRect(point);
+            assert.equal(result.point.x, 10);
+            assert.equal(result.point.y, 20);
+            assert.equal(result.width, 0);
+            assert.equal(result.height, 0);
+        });
+        
+        let defaultModelParams = new ModelParams(
+            20, 20, 850, 1100, 10, 6, 5
+        );
+        
+        QUnit.test("ModelParams constructor", function(assert) {
+            let params = defaultModelParams;
+            assert.equal(params.x, 20);
+            assert.equal(params.y, 20);
+            assert.equal(params.width, 850);
+            assert.equal(params.height, 1100);
+            assert.equal(params.gap, 10);
+            assert.equal(params.rows, 6);
+            assert.equal(params.cols, 5);
+            assert.equal(params.cols, 5);
+        });
+        
+        QUnit.test("spreadIndices", function(assert) {
+            let indices = [0, 1, 2];
+            let actual = spreadIndices(10, 2)(indices);
+            console.log(actual);
+            let expected = [0, 12, 24];
+            assert.ok(
+                arraysAreEqual
+                      (actual)
+                      (expected));
+        });
+        
+        QUnit.test("makeRowPoints", function(assert) {
+            let actual = makeRowPoints(5, 10, 2)(5);
+            let last = actual[actual.length - 1];
+            assert.equal(actual.length, 5);
+            assert.equal(last.x, 53);
+            assert.equal(last.y, 0);
+        });
+        
+        QUnit.test("makeRow", function(assert) {
+            let columns = 4;
+            let actual = makeRow(5, 10, 2, columns)(5);
+            let last = actual[actual.length - 1];
+            assert.equal(actual.length, columns);
+            assert.equal(last.x, 41);
+            assert.equal(last.y, 5);
+        });
+        
+        QUnit.test("generateModel", function(assert) {
+            let model = generateModel(defaultModelParams); 
+            let rect = model[model.length - 1];
+            assert.ok(model !== undefined);
+            assert.equal(model.length, 30); 
+            assert.equal(rect.point.x, 4320);
+            assert.equal(rect.point.y, 4460);
+            assert.equal(rect.width, 850);
+            assert.equal(rect.height, 1100);
+        });
+        
+        QUnit.test("isPointInRect", function(assert) {
+            let rect = new Rect(new Point(-10, -15), 20, 25);
+            let inside = new Point(5, 5);
+            let outside = new Point(-100, 100);
+            assert.equal(isPointInRect(inside, rect), true);
+            assert.equal(isPointInRect(outside, rect), false);
+        });
+        
+        QUnit.test("isPointInModel", function(assert) {
+            let model = generateModel(defaultModelParams);
+            let inside = new Point(30, 30);
+            let outside = new Point(10000, 10000);
+            assert.equal(isPointInModel(inside, model), true);
+            assert.equal(isPointInModel(outside, model), false);
+        });
+        
+        QUnit.test("Color constructor", function(assert) {
+            let actual = new Color(125, 126, 127); 
+            assert.equal(actual.red, 125);
+            assert.equal(actual.green, 126);
+            assert.equal(actual.blue, 127); 
+        });
+        
+        QUnit.test("colorDistanceSquared", function(assert) {
+            let c1 = new Color(0, 0, 0); 
+            let c2 = new Color(255, 255, 255);
+            let d = colorDistanceSquared(c1, c2);
+            assert.equal(d, 1);
+        });
+        
+        QUnit.test("randomStepByOne", function(assert) {
+            let xs = arrayFromCount(100);
+            let kernels = xs.map(randomStepByOne);
+            let ones = kernels.filter(isOne);
+            let zeros = kernels.filter(isZero);
+            let minusOnes = kernels.filter(isMinusOne);
+            assert.ok(ones.length > 0, "ones: " + ones.length);
+            assert.ok(zeros.length > 0, "zeros: " + zeros.length);
+            assert.ok(minusOnes.length > 0, "minusOnes: " + minusOnes.length);
+            assert.ok(ones.length + zeros.length + minusOnes.length == xs.length);
+        });
+        
+        QUnit.test("randomStepByInteger", function(assert) {
+            let xs = arrayFromCount(500);
+            let kernels = xs.map(ignoreArg(randomStepByInteger, 2));
+            let minusTwos = kernels.filter(isEqualTo(-2));
+            let minusOnes = kernels.filter(isMinusOne); 
+            let zeros = kernels.filter(isZero);
+            let ones = kernels.filter(isOne);
+            let twos = kernels.filter(isEqualTo(2));
+            assert.ok(twos.length > 0, "twos: " + twos.length);
+            assert.ok(ones.length > 0, "ones: " + ones.length);
+            assert.ok(zeros.length > 0, "zeros: " + zeros.length);
+            assert.ok(minusOnes.length > 0, "minusOnes: " + minusOnes.length);
+            assert.ok(minusTwos.length > 0, "minusTwos: " + minusTwos.length);
+            assert.ok(
+                twos.length + 
+                ones.length + 
+                zeros.length + 
+                minusOnes.length + 
+                minusTwos.length == xs.length);
+        });
+        
+        QUnit.test("subtractPareameters", function(assert) {
+            let a = new ModelParams(5,5,5,5,5,5,5);
+            let b = new ModelParams(2,2,2,2,2,2,2); 
+            let expected = new ModelParams(3,3,3,3,3,3,3);
+            let actual = subtractParameters(a, b); 
+            assert.equal(actual.x, expected.x);
+            assert.equal(actual.y, expected.y);
+            assert.equal(actual.width, expected.width);
+            assert.equal(actual.height, expected.height);
+            assert.equal(actual.gap, expected.gap);
+            assert.equal(actual.rows, expected.rows);
+            assert.equal(actual.cols, expected.cols);
+        });
+        
+    </script>
+</head>
+<body>
+<div id="qunit"></div>
+</body>
+</html>
