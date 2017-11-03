@@ -119,13 +119,13 @@ let generateModel = function(modelParams) {
         arrayFromCount, 
         spreadIndices(modelParams.height, modelParams.gap), 
         map(function(y) { return y + modelParams.y; }),
-        flatMap(makeRow(modelParams.x, modelParams.width, modelParams.gap, modelParams.rows)), 
+        flatMap(makeRow(modelParams.x, modelParams.width, modelParams.gap, modelParams.cols)), 
         map(pointToRect), 
         map(makeRectWider(rectWidth)), 
         map(makeRectTaller(rectHeight))
     );
 
-    return toGrid(modelParams.cols);
+    return toGrid(modelParams.rows);
 }
 
 let isPointInRect = function(point, rect) {

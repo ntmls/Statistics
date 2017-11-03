@@ -17,6 +17,45 @@
             firstError: 0
         };
         
+        // getImageData = string -> ImageData 
+        let getImageData = function(image) {
+            let canvas = document.createElement("Canvas");
+            canvas.width = image.width;
+            canvas.height = image.height; 
+            let ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            return ctx.getImageData(0, 0, image.width, image.height); 
+        }; 
+
+        let getPixel = function(imageData) {
+            let scanWidth = imageData.width * 4;
+            return function(point) {
+                let index = point.y * scanWidth + point.x * 4;
+                return new Color(
+                    imageData.data[index], 
+                    imageData.data[index+1], 
+                    imageData.data[index+2], 
+                );
+            };
+        };
+
+        // samples the pixels whithin an image.
+        var sampleImage = function(imageData, count) {
+            var xs = Distributions.createUniform(0, imageData.width - 1);
+            var ys = Distributions.createUniform(0, imageData.height - 1);
+            var result = [];
+            for(var i = 0; i < count; i++) {
+                let x = Math.floor(xs.sample());
+                let y = Math.floor(ys.sample());
+                let point = new Point(x, y);
+                result.push({
+                    "point": point,
+                    "color": getPixel(imageData)(point)
+                });
+            }
+            return result;
+        };
+        
         let drawPoints = function(context) {
             return function(points) {
                 context.beginPath();
@@ -207,12 +246,7 @@
             let imageSamples = sampleImage(imageData, 10000);
             let priors = getPriors(imageData.width, imageData.height);  
             let samples = initializeSamples(priors, imageSamples, count);
-            /*
-            let maxDistance = samples.reduce(function(a,b) {
-                return Math.max(a, b.distance); 
-            }, 0);
-            */
-            let scheduler = scheduleThresholdsByPercentage(400000, 1000, .99);
+            let scheduler = scheduleThresholdsByPercentage(400000, 500, .99);
             
             // render(image, imageSamples, samples);
             setTimeout(function() {
