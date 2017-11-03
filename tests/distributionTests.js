@@ -92,6 +92,28 @@ QUnit.module("Distributions", function() {
         assert.equal(round4(distribution.densityAt(5)), .0102);
     });
     
+        QUnit.test("Create Normal", function( assert ) {
+        var distribution = Distributions.createNormal(2, 3);
+        assert.notStrictEqual(distribution, undefined, "Normal must be defined");
+
+        assert.equal(distribution.mean, 2, "Parameter 'mean' must be set");
+        assert.equal(distribution.stdv, 3, "Parameter 'standardDeviation' must be set");
+
+        var samples = distribution
+            .sampleMany(1000)
+            .filter(function(x) { return x !== undefined; });
+        assert.equal(samples.length, 1000, "The number of samples asked for must exist");
+        
+        var round4 = function(n) { return round(n, 4); };
+        
+        assert.equal(round4(distribution.densityAt(0)), .1176);
+        assert.equal(round4(distribution.densityAt(1)), .3025);
+        assert.equal(round4(distribution.densityAt(2)), .3241);
+        assert.equal(round4(distribution.densityAt(3)), .1852);
+        assert.equal(round4(distribution.densityAt(4)), .0595);
+        assert.equal(round4(distribution.densityAt(5)), .0102);
+    });
+    
     QUnit.test("factorial", function( assert ) {
        assert.equal(Distributions.factorial(4), 4*3*2*1); 
     });

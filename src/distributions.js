@@ -4,7 +4,7 @@ var Distributions = function() {
         var result = [];
         for (var i = 0; i < n; i++) {
             result[i] = i;
-        };
+        }
         return result;
     };
 
@@ -54,7 +54,7 @@ var Distributions = function() {
             if (value >= end) { return 0; }
             return 1 / length;
         };
-    };
+    }
     
     function Triangle(min, mode, max) {
         this.min = min;
@@ -78,7 +78,7 @@ var Distributions = function() {
                 return slope2 * (max - value); 
             }
             return null;
-        };
+        }
         
         var uniform1 = createUniform(min, max);
         var uniform2 = createUniform(0, densityAt(mode));
@@ -123,7 +123,7 @@ var Distributions = function() {
             var b = Math.pow(rate, value);
             var c = Math.pow(1 - rate, trials - value);
             return a * b * c;
-        };
+        }
         
         this.sample = function() {
             var r = Math.random();
@@ -142,17 +142,45 @@ var Distributions = function() {
         
         this.densityAt = densityAt;
     }
+    
+    function Normal(mean, stdv) {
+        this.mean = mean;
+        this.stdv = stdv;
+        
+        var a = 1 / (stdv * (Math.sqrt(2.0 * Math.PI)));
+        var b = (2 * stdv);
+        var twoPi = Math.PI * 2;
+        
+        function densityAt(value) {
+            return a * Math.exp(-(((value - mean) * (value - mean))/b)); 
+        }
+        
+        this.sample = function() {
+            let u1 = Math.random();
+            let u2 = Math.random();
+            let r = Math.sqrt(-2 * Math.log(u1)) * Math.cos(twoPi * u2);
+            return r * stdv + mean;
+        };
+        
+        this.sampleMany = function(count) {
+            return sequence(count).map(this.sample);
+        };
+        
+        this.densityAt = densityAt;
+    }
 
     var createBernoulli = function(p) { return new Bernoulli(p); };
     var createUniform = function(start, end) { return new Uniform(start, end); };
     var createTriangle = function(min, mode, max) { return new Triangle(min, mode, max); };
     var createBinomial = function(trials, rate) { return new Binomial(trials, rate); };
+    var createNormal = function(mean, stdv) { return new Normal(mean, stdv); };
     
     var exports  = {
         "createBernoulli": createBernoulli,
         "createUniform": createUniform,
         "createTriangle": createTriangle,
         "createBinomial": createBinomial,
+        "createNormal": createNormal,
         "factorial": factorial, 
         "choose": choose
     };

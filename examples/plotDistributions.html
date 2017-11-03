@@ -50,19 +50,25 @@
           distribution = Distributions.createUniform(-1, 1);
           samples = distribution.sampleMany(count);
           canvas = document.getElementById("displayUniform");
-          drawDensity(canvas, samples, 15);
+          drawDensity(canvas, samples, 50);
           
           // triangle distribution
           distribution = Distributions.createTriangle(-1, 0, 1);
           samples = distribution.sampleMany(count);
           canvas = document.getElementById("displayTriangle");
-          drawDensity(canvas, samples, 15);
+          drawDensity(canvas, samples, 50);
           
           // Binomial distribution
           distribution = Distributions.createBinomial(15, .33);
           samples = distribution.sampleMany(count);
           canvas = document.getElementById("displayBinomial");
-          drawDensity(canvas, samples, 15);
+          drawDensity(canvas, samples, 50);
+          
+          // Normal distribution
+          distribution = Distributions.createNormal(2, 3);
+          samples = distribution.sampleMany(count);
+          canvas = document.getElementById("displayNormal");
+          drawDensity(canvas, samples, 50);
       };
 
     </script>
@@ -72,5 +78,6 @@
       <canvas id="displayUniform" width="640", height="240" ></canvas>
       <canvas id="displayTriangle" width="640", height="240" ></canvas>
       <canvas id="displayBinomial" width="640", height="240" ></canvas>
+      <canvas id="displayNormal" width="640", height="240" ></canvas>
   </body>
 </html>
