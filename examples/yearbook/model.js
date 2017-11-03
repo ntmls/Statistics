@@ -71,10 +71,12 @@ let makeRectTaller = function(amount) {
     };
 };
 
+// distributes values
 let spreadIndices = function(size, gap) {
     return function(indices) {
+        let interval = (size + gap) / indices.length;
         return map(function(x) { 
-            return x * (size + gap); 
+            return x * interval; 
         })(indices);
     }; 
 };
@@ -109,6 +111,8 @@ let makeRow = function(xOffset, width, gap, columns) {
 
 // generateModel :: ModelParams -> Model
 let generateModel = function(modelParams) {
+    let rectWidth = ((modelParams.width + modelParams.gap) / modelParams.cols) - modelParams.gap;
+    let rectHeight = ((modelParams.height + modelParams.gap) / modelParams.rows) - modelParams.gap;
 
     // toGrid :: number -> [rect]
     let toGrid = sequence(
@@ -117,8 +121,8 @@ let generateModel = function(modelParams) {
         map(function(y) { return y + modelParams.y; }),
         flatMap(makeRow(modelParams.x, modelParams.width, modelParams.gap, modelParams.rows)), 
         map(pointToRect), 
-        map(makeRectWider(modelParams.width)), 
-        map(makeRectTaller(modelParams.height))
+        map(makeRectWider(rectWidth)), 
+        map(makeRectTaller(rectHeight))
     );
 
     return toGrid(modelParams.cols);
@@ -199,9 +203,9 @@ let getPriors = function(width, height) {
     return {
         x: Distributions.createTriangle(0, 0, width * .2),
         y: Distributions.createTriangle(0, 0, height * .2),
-        width: Distributions.createUniform(10, width * .5),
-        height: Distributions.createUniform(10, height * .5),
-        gap: Distributions.createUniform(0, width * .25),
+        width: Distributions.createTriangle(0, width, width),
+        height: Distributions.createTriangle(0, height, height),
+        gap: Distributions.createTriangle(0, 0, width * .25),
         rows: Distributions.createUniform(4, 7),
         cols: Distributions.createUniform(4, 7)
     };
@@ -270,9 +274,9 @@ let probabilityOfMove = function(move) {
          probInRange(-5, 5, move.y) * 
          probInRange(-5, 5, move.width)* 
          probInRange(-5, 5, move.height) * 
-         probInRange(-5, 5, move.gap) * 
-         probInRange(-5, 5, move.rows) * 
-         probInRange(-5, 5, move.cols) 
+         probInRange(-1, 1, move.gap) * 
+         probInRange(-1, 1, move.rows) * 
+         probInRange(-1, 1, move.cols) 
 };
 
 let moveParameters = function(parameter, move) {
