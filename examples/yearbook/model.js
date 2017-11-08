@@ -157,10 +157,10 @@ let colorDistanceSquared = function(a, b) {
     return (dr*dr + dg*dg + db*db) / 195075; 
 };
 
-let compare = function(imageSamples, model) {
+let compare = function(data, model) {
     let sum = 0;
-    if (imageSamples.count === undefined) {
-        imageSamples.count = imageSamples.length;
+    if (data.imageSamples.count === undefined) {
+        data.imageSamples.count = data.imageSamples.length;
     }
     let bgColor = new Color(250, 250, 250);
     let maxX = 0;
@@ -169,9 +169,9 @@ let compare = function(imageSamples, model) {
     let cornerY = 0;
     let countIn = 0;
     let countOut = 0;
-    let len = imageSamples.length;
+    let len = data.imageSamples.count;
     for(let i = 0; i < len; i++) {
-        let sample = imageSamples[i];
+        let sample = data.imageSamples[i];
         let isin = isPointInModel(sample.point, model);
         let isBg = isBackGroundColor(bgColor)(sample.color);
         if (isin) {
