@@ -7,6 +7,7 @@
 	<script src="https://code.jquery.com/qunit/qunit-2.3.3.js"></script>
     <script src="../../src/fun.js"></script>
     <script src="model.js"></script>
+    <script src="imaging.js"></script>
     <script>
 
         QUnit.test("Point constructor)", function(assert) {
@@ -80,10 +81,10 @@
         });
         
         QUnit.test("spreadIndices", function(assert) {
-            let indices = [0, 1, 2];
+            let indices = [0, 1];
             let actual = spreadIndices(10, 2)(indices);
             console.log(actual);
-            let expected = [0, 12, 24];
+            let expected = [0, 6];
             assert.ok(
                 arraysAreEqual
                       (actual)
@@ -91,20 +92,20 @@
         });
         
         QUnit.test("makeRowPoints", function(assert) {
-            let actual = makeRowPoints(5, 10, 2)(5);
+            let actual = makeRowPoints(5, 10, 2)(2);
             let last = actual[actual.length - 1];
-            assert.equal(actual.length, 5);
-            assert.equal(last.x, 53);
+            assert.equal(actual.length, 2);
+            assert.equal(last.x, 11);
             assert.equal(last.y, 0);
         });
         
         QUnit.test("makeRow", function(assert) {
-            let columns = 4;
-            let actual = makeRow(5, 10, 2, columns)(5);
+            let columns = 2;
+            let actual = makeRow(5, 10, 2, columns)(123);
             let last = actual[actual.length - 1];
             assert.equal(actual.length, columns);
-            assert.equal(last.x, 41);
-            assert.equal(last.y, 5);
+            assert.equal(last.x, 11);
+            assert.equal(last.y, 123);
         });
         
         QUnit.test("generateModel", function(assert) {
@@ -112,10 +113,10 @@
             let rect = model[model.length - 1];
             assert.ok(model !== undefined);
             assert.equal(model.length, 30); 
-            assert.equal(rect.point.x, 4320);
-            assert.equal(rect.point.y, 4460);
-            assert.equal(rect.width, 850);
-            assert.equal(rect.height, 1100);
+            assert.equal(rect.point.x, 708);
+            assert.equal(rect.point.y, 945);
+            assert.equal(rect.width, 162);
+            assert.equal(rect.height, 175);
         });
         
         QUnit.test("isPointInRect", function(assert) {
@@ -196,55 +197,41 @@
         });
         
         QUnit.test("getPixel", function(assert) {
-                let point = new Point(100, 100); 
-                let image = document.getElementById("image");
-                let imageData = getImageData(image);
-                let actual = getPixel(imageData)(point);
-                assert.equal(actual.red, 64); 
-                assert.equal(actual.green, 60); 
-                assert.equal(actual.blue, 58); 
-            });
-            
-            QUnit.test("sampleImage", function(assert) {
-                let image = document.getElementById("image");
-                let imageData = getImageData(image);
-                let samples = sampleImage(imageData, 50);
-                let notZero = function(n) { return n != 0; };
-                let reds = samples.map(function(s) { return s.color.red; });
-                let greens = samples.map(function(s) { return s.color.green; });
-                let blues = samples.map(function(s) { return s.color.blue; });
-                assert.equal(samples.length, 50);
-                assert.equal(any(notZero)(reds), true);
-                assert.equal(any(notZero)(greens), true);
-                assert.equal(any(notZero)(blues), true);
-            });
-            
-            QUnit.test("compare", function(assert) {
-                let image = document.getElementById("image");
-                let imageData = getImageData(image);
-                let samples = sampleImage(imageData, 500);
-                let modelParams = new ModelParams(0,0,20,30,5,4,5);
-                let model = generateModel(modelParams);
-                let dist = compare(samples, model);
-                assert.ok(dist > 100);
-            });
-            
-            QUnit.test("scheduleThresholds", function(assert) {
-                let schedule = scheduleThresholds(50, 5);
-                assert.equal(schedule.value, 50);
-                schedule = schedule.next;
-                assert.equal(schedule.value, 40);
-                schedule = schedule.next;
-                assert.equal(schedule.value, 30);
-                schedule = schedule.next;
-                assert.equal(schedule.value, 20);
-                schedule = schedule.next;
-                assert.equal(schedule.value, 10);
-                schedule = schedule.next;
-                assert.equal(schedule.value, 0);
-                schedule = schedule.next;
-                assert.equal(schedule.value, undefined);
-            });
+            let point = new Point(100, 100); 
+            let image = document.getElementById("image");
+            let imageData = getImageData(image);
+            let actual = getPixel(imageData)(point);
+            assert.equal(actual.red, 64); 
+            assert.equal(actual.green, 60); 
+            assert.equal(actual.blue, 58); 
+        });
+
+        QUnit.test("sampleImage", function(assert) {
+            let image = document.getElementById("image");
+            let imageData = getImageData(image);
+            let samples = sampleImage(imageData, 50);
+            let notZero = function(n) { return n != 0; };
+            let reds = samples.map(function(s) { return s.color.red; });
+            let greens = samples.map(function(s) { return s.color.green; });
+            let blues = samples.map(function(s) { return s.color.blue; });
+            assert.equal(samples.length, 50);
+            assert.equal(any(notZero)(reds), true);
+            assert.equal(any(notZero)(greens), true);
+            assert.equal(any(notZero)(blues), true);
+        });
+
+        QUnit.test("compare", function(assert) {
+            let image = document.getElementById("image");
+            let imageData = getImageData(image);
+            let samples = sampleImage(imageData, 500);
+            let modelParams = new ModelParams(0,0,20,30,5,4,5);
+            let model = generateModel(modelParams);
+            let data = {
+                imageSamples: samples
+            };
+            let dist = compare(data, model);
+            assert.ok(dist > 100);
+        });
         
     </script>
 </head>
