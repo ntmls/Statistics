@@ -98,9 +98,10 @@
         return min2 + p * l;
       }
 
-      var drawDensity = function(canvas, data, bins) {
+      var drawDensity = function(canvas, data, histogram) {
         console.log("drawing");
-        var histogram = Histogram.toDensity(Histogram.create(data, bins));
+        histogram = Histogram.update(histogram, data);
+        histogram = Histogram.toDensity(histogram);
         var context = canvas.getContext('2d');
         var width = canvas.width;
         var height = canvas.height;
@@ -125,23 +126,40 @@
         }
       };
         
+        var xHistogram;
+        var yHistogram; 
+        var radiusHistogram;
+        var distanceHistogram;
+        
         var drawDistributions = function(samples) {
-            var bins = 21;
+            var bins = 51;
             var xCanvas = document.getElementById('xDensityDisplay');
             var xSamples = samples.map(function(x) { return x.x; });
-            drawDensity(xCanvas, xSamples, bins);
+            if (xHistogram === undefined) {
+                xHistogram = Histogram.create(xSamples, bins); 
+            }
+            drawDensity(xCanvas, xSamples, xHistogram);
 
             var yCanvas = document.getElementById('yDensityDisplay');
             var ySamples = samples.map(function(x) { return x.y; });
-            drawDensity(yCanvas, ySamples, bins);
+            if (yHistogram === undefined) {
+                yHistogram = Histogram.create(ySamples, bins); 
+            }
+            drawDensity(yCanvas, ySamples, yHistogram);
 
             var rCanvas = document.getElementById('radiusDensityDisplay');
             var rSamples = samples.map(function(x) { return x.radius; });
-            drawDensity(rCanvas, rSamples, bins);
+            if (radiusHistogram === undefined) {
+                radiusHistogram = Histogram.create(rSamples, bins); 
+            }
+            drawDensity(rCanvas, rSamples, radiusHistogram);
 
             var distCanvas = document.getElementById('distanceDisplay');
             var distSamples = samples.map(function(x) { return x.distance; });
-            drawDensity(distCanvas, distSamples, bins);
+            if (distanceHistogram === undefined) {
+                distanceHistogram = Histogram.create(distSamples, bins); 
+            }
+            drawDensity(distCanvas, distSamples, distanceHistogram);
             
             var minItem = samples.reduce(function(a,b) { 
                 if (a.distance < b.distance) {
@@ -262,7 +280,7 @@
                     priors, 
                     data, 
                     newSchedule);  
-            }, 10);
+            }, 100);
         };
         
         var scheduleThresholds = function() {
