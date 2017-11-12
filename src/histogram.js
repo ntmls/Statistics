@@ -1,5 +1,6 @@
-var Histogram = function() {
-
+let Histogram = function() {
+    
+    // Represends one bar on the histogram
     function Bin(min, max, count, inclusive) {
         this.min = min;
         this.max = max;
@@ -10,6 +11,7 @@ var Histogram = function() {
         };
     };
     
+    // Determines if a value is within a bin
     Bin.prototype.inBin = function(value) {
         if (this.inclusive) {
             return (this.min <= value && value <= this.max);
@@ -17,24 +19,26 @@ var Histogram = function() {
             return (this.min <= value && value < this.max);
         }
     };
+    
+    // Changes counts into densities
+    let toDensity = function(bins) {
+        let binAreas = bins.map(function(x) { return new Bin(x.min, x.max, x.count * (x.max - x.min)); });
+        let totalArea = binAreas.reduce(function(a, b) { return a + b.count;  }, 0);
+        let normalizedArea = binAreas.map(function(x) { return new Bin(x.min, x.max, x.count / totalArea); });
+        let binHeights = normalizedArea.map(function(x) { return new Bin(x.min, x.max, x.count / (x.max - x.min)); });
+        return binHeights;
+    };
 
-  var toDensity = function(bins) {
-      var binAreas = bins.map(function(x) { return new Bin(x.min, x.max, x.count * (x.max - x.min)); });
-      var totalArea = binAreas.reduce(function(a, b) { return a + b.count;  }, 0);
-      var normalizedArea = binAreas.map(function(x) { return new Bin(x.min, x.max, x.count / totalArea); });
-      var binHeights = normalizedArea.map(function(x) { return new Bin(x.min, x.max, x.count / (x.max - x.min)); });
-      return binHeights;
-  };
-
-    var create = function(data, binCount) {
-        var first = (data.value === undefined) ? data[0] : data.value;
-        var min = data.reduce(function(a,b) { return Math.min(a,b); }, first);
-        var max = data.reduce(function(a,b) { return Math.max(a,b); }, first);
-        var interval = (max - min) / binCount;
-        var bins = [];
-        for (var i = 0; i < binCount; i++) {
-            var start = min + i * interval;
-            var end;
+    // Creates a histogram from data
+    let create = function(data, binCount) {
+        let first = (data.value === undefined) ? data[0] : data.value;
+        let min = data.reduce(function(a,b) { return Math.min(a,b); }, first);
+        let max = data.reduce(function(a,b) { return Math.max(a,b); }, first);
+        let interval = (max - min) / binCount;
+        let bins = [];
+        for (let i = 0; i < binCount; i++) {
+            let start = min + i * interval;
+            let end = 0;
             if (i == binCount - 1) {
               end = max;
             } else {
@@ -50,12 +54,32 @@ var Histogram = function() {
             }, 0);
         }
         return bins;
-  };
+    };
+    
+    let update = function(histogram, data) {
+        let bins = [];
+        let binCount = histogram.length;
+        for (let i = 0; i < binCount; i++) {
+            bins[i] = new Bin(
+                histogram[i].min, 
+                histogram[i].max, 
+                0, i == binCount - 1);
+            bins[i].count = data.reduce(function(a,b) {
+                if(bins[i].inBin(b)) {
+                    return a + 1;
+                } else {
+                    return a;
+                }                    
+            }, 0);
+        }
+        return bins;
+    };
 
-  var exports = {
-      "create": create,
-      "toDensity": toDensity
-  };
+    let exports = {
+        "create": create,
+        "update": update,
+        "toDensity": toDensity
+    };
 
-  return exports;
+    return exports;
 } ();
