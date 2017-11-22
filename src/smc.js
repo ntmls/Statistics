@@ -101,7 +101,7 @@ let resample = function(
                 data,
                 scheduler, 
                 scheduler.next(threshold, maxDist)); 
-        }, 0);    
+        }, 10);    
     }
 };
 
