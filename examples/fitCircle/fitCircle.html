@@ -6,7 +6,6 @@
     <script src="../../src/fun.js"></script>
     <script src="../../src/smc.js"></script>
     <script src="model.js"></script>
-    <script src="imaging.js"></script>
     <script>
         
         let errorTraceState = {
@@ -51,7 +50,7 @@
         let drawErrorState = function(errorTraceState) {
             let canvas = document.getElementById("errorTrace");
             let ctx = canvas.getContext('2d');
-            ctx.strokeStyle = "black";
+            ctx.strokeStyle = "rgba(0,0,0,.1)";
             ctx.fillStyle = "white";
             ctx.fillRect(errorTraceState.index,0, 2, errorTraceState.height);
             ctx.beginPath();
@@ -175,7 +174,7 @@
             };
             let priors = getPriors(imageWidth, imageHeight);  
             let samples = initializeSamples(priors, data, count);
-            let scheduler = scheduleThresholdsByPercentage(5000, 10, .97);
+            let scheduler = scheduleThresholdsByPercentage(5000, 10, .95);
             
             // render(image, imageSamples, samples);
             setTimeout(function() {
