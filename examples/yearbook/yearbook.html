@@ -51,7 +51,7 @@
         let drawErrorState = function(errorTraceState) {
             let canvas = document.getElementById("errorTrace");
             let ctx = canvas.getContext('2d');
-            ctx.strokeStyle = "black";
+            ctx.strokeStyle = "rgba(0,0,0,.1)";
             ctx.fillStyle = "white";
             ctx.fillRect(errorTraceState.index,0, 2, errorTraceState.height);
             ctx.beginPath();
@@ -120,7 +120,7 @@
             };
             let priors = getPriors(imageData.width, imageData.height);  
             let samples = initializeSamples(priors, data, count);
-            let scheduler = scheduleThresholdsByPercentage(400000, 700, .99);
+            let scheduler = scheduleThresholdsByPercentage(400000, 700, .90);
             
             // render(image, imageSamples, samples);
             setTimeout(function() {

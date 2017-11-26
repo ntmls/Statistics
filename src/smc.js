@@ -79,11 +79,6 @@ let resample = function(
             };
             newSamples.push(newSample);
             i = i + 1;
-
-            // keep track of the maximum distance so we can take a shortcut
-            // and jump to it if it is lower than the next scheduled distance       
-            maxDist = Math.max(newDistance, maxDist);
-
         } else {
             rejectCount = rejectCount + 1;
             if (rejectCount > 5000) {
@@ -100,19 +95,30 @@ let resample = function(
                 priors, 
                 data,
                 scheduler, 
-                scheduler.next(threshold, maxDist)); 
+                scheduler.next(threshold, newSamples)); 
         }, 10);    
     }
 };
 
 // returns a threshold scheduler
-let scheduleThresholdsByPercentage = function(maxDistance, minDistance, percent) {
+let scheduleThresholdsByPercentage = function(
+    maxDistance, 
+    minThreshhold, 
+    percent) 
+{
     return {
         init: maxDistance,
-        next: function(threshold, max) {
-           return Math.min(threshold * percent, max);
+        next: function(threshold, samples) {
+            let ds = samples.map(function(x) {
+                return x.distance;
+            });
+            let sorted = ds.sort(function(a,b) {
+                return a - b;
+            });
+            let index = Math.floor(percent * sorted.length);
+            return sorted[index];
         },
-        stop: function(threshold, max) {
+        stop: function(threshold, samples) {
             if (threshold < minDistance) { 
                 return true;
             }

@@ -139,7 +139,7 @@
             var result = [];
             for(var i = 0; i < count; i++) {
                 let point = new Point(
-                    xs.sample(), 
+                    xs.sample(),  
                     ys.sample());
                 var color;
                 if (isPointInModel(point, target)) {
@@ -174,7 +174,7 @@
             };
             let priors = getPriors(imageWidth, imageHeight);  
             let samples = initializeSamples(priors, data, count);
-            let scheduler = scheduleThresholdsByPercentage(5000, 10, .95);
+            let scheduler = scheduleThresholdsByPercentage(5000, 10, .90);
             
             // render(image, imageSamples, samples);
             setTimeout(function() {
