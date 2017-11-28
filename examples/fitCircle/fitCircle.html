@@ -156,18 +156,18 @@
         };
         
         let begin = function() {
-            var count = 200,
+            var count = 150,
                 imageWidth = 640,
                 imageHeight = 480;
             var target = new Circle(
                 Math.random() * imageWidth,
                 Math.random() * imageHeight, 
-                Math.random() * 100 + 5);
+                Math.random() * 100 + 25);
             let imageSamples = createTargetImage(
                 imageWidth, 
                 imageHeight, 
                 target, 
-                10000);
+                7500);
             let data = {
                 "target": target,
                 "imageSamples": imageSamples

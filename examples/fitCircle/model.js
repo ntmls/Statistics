@@ -126,23 +126,24 @@ let randomStepByInteger = function(number) {
     }
 };
 
+let proposal = {
+    x: Distributions.createTriangle(-60, 0, 60), 
+    y: Distributions.createTriangle(-60, 0, 60), 
+    radius: Distributions.createTriangle(-60, 0, 60), 
+}; 
+
 let getMove = function() {
     return new ModelParams(
-        randomStepByInteger(20),
-        randomStepByInteger(20),
-        randomStepByInteger(10)
+        proposal.x.sample(),
+        proposal.y.sample(),
+        proposal.radius.sample()
     );    
 };
 
 let probabilityOfMove = function(move) {
-    let probInRange = function(min, max, value) {
-        if (value < min) { return 0; }
-        if (value > max) { return 0; }
-        return 1 / ((max - min) + 1);
-    };
-    return probInRange(-20, 20, move.x) * 
-         probInRange(-20, 20, move.y) * 
-         probInRange(-10, 10, move.radius);
+    return proposal.x.densityAt(move.x) * 
+        proposal.y.densityAt(move.y) * 
+        proposal.radius.densityAt(move.radius);
 };
 
 let moveParameters = function(parameter, move) {
