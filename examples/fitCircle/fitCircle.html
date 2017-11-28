@@ -8,12 +8,15 @@
     <script src="model.js"></script>
     <script>
         
-        let errorTraceState = {
+        let traceState = {
             width: 500,
             height: 100,
             iteration: 0,
             index: 0,
             errors: [],
+            xs: [],
+            ys: [],
+            radii: [], 
             firstError: 0
         };
         
@@ -29,49 +32,70 @@
             };
         };
         
+        let distanceSelector = function(result) {
+            return result.distance; 
+        }; 
+        
+        let xSelector = function(result) {
+            return result.model.x; 
+        }; 
+        
+        let ySelector = function(result) {
+            return result.model.y; 
+        }; 
+        
+        let radiusSelector = function(result) {
+            return result.model.radius; 
+        }; 
+        
         let updateErrorState = function(models) {
-            errorTraceState.iteration += 1;
-            errorTraceState.index += 1;
-            if (errorTraceState.index > errorTraceState.width) {
-                errorTraceState.index = 0;
+            traceState.iteration += 1;
+            traceState.index += 1;
+            if (traceState.index > traceState.width) {
+                traceState.index = 0;
             }
-            errorTraceState.errors = models.map(function(x) { return x.distance; });
-            errorTraceState.maxError = errorTraceState.errors.reduce(function(a,b) {
+            
+            traceState.errors = models.map(distanceSelector);
+            traceState.xs = models.map(xSelector);
+            traceState.ys = models.map(ySelector);
+            traceState.radii = models.map(radiusSelector);
+            
+            traceState.maxError = traceState.errors.reduce(function(a,b) {
                     return Math.max(a, b);
                 }, 0);
-            errorTraceState.minError = errorTraceState.errors.reduce(function(a,b) {
+            traceState.minError = traceState.errors.reduce(function(a,b) {
                     return Math.min(a, b);
-                }, errorTraceState.errors[0]);
-            if (errorTraceState.firstError == 0) {
-                errorTraceState.firstError = errorTraceState.maxError;
+                }, traceState.errors[0]);
+            if (traceState.firstError == 0) {
+                traceState.firstError = traceState.maxError;
             }
         };
         
-        let drawErrorState = function(errorTraceState) {
-            let canvas = document.getElementById("errorTrace");
+        let drawValueTrace = function(values, max, canvasId, index) {
+            let canvas = document.getElementById(canvasId);
             let ctx = canvas.getContext('2d');
             ctx.strokeStyle = "rgba(0,0,0,.1)";
             ctx.fillStyle = "white";
-            ctx.fillRect(errorTraceState.index,0, 2, errorTraceState.height);
+            ctx.fillRect(traceState.index, 0, 2, max);
             ctx.beginPath();
-            for(let i = 0; i < errorTraceState.errors.length; i++) {
-                let v = (errorTraceState.errors[i] / errorTraceState.firstError) * errorTraceState.height;
-                ctx.moveTo(errorTraceState.index, v);
-                ctx.lineTo(errorTraceState.index + 1, v);
+            let len = values.length;
+            for(let i = 0; i < len; i++) {
+                let v = (values[i] / max) * canvas.height;
+                ctx.moveTo(index, v);
+                ctx.lineTo(index + 1, v);
             }
             ctx.stroke();
-            let minErrorElem = document.getElementById('minDistance');
-            minErrorElem.innerHTML = errorTraceState.minError;
-            let maxErrorElem = document.getElementById('maxDistance');
-            maxErrorElem.innerHTML = errorTraceState.maxError;
         };
         
         let render = function(data, models) {
             let canvas = document.getElementById("displayCanvas");
             let ctx = canvas.getContext('2d');
             
+            let width = 640;
+            let height = 480;
+            
             // clear
-            ctx.clearRect(0, 0, 640, 480);
+            ctx.clearRect(0, 0, width, height);
             
             // draw the target
             /*
@@ -126,9 +150,37 @@
             ctx.strokeStyle = "red";
             drawPoints(ctx)(outs.map(toPoint));
             
-            // error trace
+            // Traces
             updateErrorState(models);
-            drawErrorState(errorTraceState);
+            drawValueTrace(
+                traceState.errors, 
+                traceState.firstError, 
+                "errorTrace", 
+                traceState.index);
+            
+            drawValueTrace(
+                traceState.xs, 
+                width, 
+                "xTrace", 
+                traceState.index);
+            
+            drawValueTrace(
+                traceState.ys, 
+                height, 
+                "yTrace", 
+                traceState.index);
+            
+            drawValueTrace(
+                traceState.radii, 
+                150, 
+                "radiusTrace", 
+                traceState.index);
+                
+            // labels
+            let minErrorElem = document.getElementById('minDistance');
+            minErrorElem.innerHTML = traceState.minError;
+            let maxErrorElem = document.getElementById('maxDistance');
+            maxErrorElem.innerHTML = traceState.maxError;
             
         };
         
@@ -189,7 +241,7 @@
         };
         
         let resetErrorTrace = function() {
-            errorTraceState.firstError = 0;
+            traceState.firstError = 0;
         };
 
     </script>
@@ -200,7 +252,11 @@
         
         <label id="minDistance">Min Distance</label><br>
         <label id="maxDistance">Max Distance</label><br>
-        <button onclick="resetErrorTrace()">Reset Error Trace</button>
+        <button onclick="resetErrorTrace()">Reset Error Trace</button><br>
+        
+        <canvas id="xTrace" width="500" height="100"></canvas><br>
+        <canvas id="yTrace" width="500" height="100"></canvas><br>
+        <canvas id="radiusTrace" width="500" height="100"></canvas><br>
     
         <script>
             begin();
