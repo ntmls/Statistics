@@ -157,7 +157,7 @@ let colorDistanceSquared = function(a, b) {
     return (dr*dr + dg*dg + db*db) / 195075; 
 };
 
-let compare = function(data, model) {
+let compare = function(data, model, threshold) {
     let sum = 0;
     if (data.imageSamples.count === undefined) {
         data.imageSamples.count = data.imageSamples.length;
@@ -185,6 +185,8 @@ let compare = function(data, model) {
         }
         if (sample.point.x > maxX) { maxX = sample.point.x }
         if (sample.point.y > maxY) { maxY = sample.point.y }
+        
+        if (sum > threshold) { return sum; }
     }
     let lastRect = model[model.length - 1]; 
     if (lastRect.point.x + lastRect.width > maxX) { sum = sum * 10 }

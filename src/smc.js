@@ -3,7 +3,7 @@ let initializeSamples = function(priors, data, count) {
     for (let i = 0; i < count; i++) {
         let params = parametersFromPriors(priors);
         let model = generateModel(params);
-        let distance = compare(data, model);
+        let distance = compare(data, model, Number.MAX_VALUE);
         let sample = {
             parameters: params,
             model: model,
@@ -64,7 +64,7 @@ let resample = function(
         let priorProb = priorProbabilityOf(priors)(newParams);
         let importanceProb = probabilityOfSample(oldSamples, newParams);
         let newModel = generateModel(newParams);
-        let newDistance = compare(data, newModel);
+        let newDistance = compare(data, newModel, threshold);
 
         if (newDistance <= threshold &&
             priorProb > 0 &&

@@ -56,7 +56,7 @@ var isPointInModel = function(point, model) {
     }
 };
 
-let compare = function(data, model) {
+let compare = function(data, model, threshold) {
     let sum = 0;
     if (data.imageSamples.count === undefined) {
         data.imageSamples.count = data.imageSamples.length;
@@ -80,6 +80,9 @@ let compare = function(data, model) {
             }
             countOut++;
         }
+        
+        // exit early if we can for performance reasons
+        if (sum > threshold) { return sum; }
     }
     if (countIn == 0 || countOut == 0) { return 99999 };
     return sum;
