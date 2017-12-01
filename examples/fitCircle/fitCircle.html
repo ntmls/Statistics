@@ -8,6 +8,8 @@
     <script src="model.js"></script>
     <script>
         
+        let smc = ApproximateBayes.createSmc(); 
+        
         let traceState = {
             width: 500,
             height: 100,
@@ -225,19 +227,28 @@
                 "imageSamples": imageSamples
             };
             let priors = getPriors(imageWidth, imageHeight);  
-            let samples = initializeSamples(priors, data, count);
-            let scheduler = scheduleThresholdsByPercentage(5000, 10, .90);
+            let samples = smc.initializeSamples(priors, data, count);
+            let scheduler = smc.scheduleThresholdsByPercentage(5000, 10, .90);
             
-            // render(image, imageSamples, samples);
-            setTimeout(function() {
-                resample(
-                    normalizeWeights(samples), 
-                    count, 
-                    priors, 
-                    data,
-                    scheduler, 
-                    scheduler.init); 
-            }, 0);
+            var result = smc.resample(
+                smc.normalizeWeights(samples), 
+                count, 
+                priors, 
+                data,
+                scheduler, 
+                scheduler.init); 
+            render(data, result.newSamples);
+            
+            var iter = function() {
+                if (result != null) {
+                    result = result.next();
+                    render(data, result.newSamples);   
+                    setTimeout(iter, 0);
+                }
+            };
+            
+            setTimeout(iter, 0);
+            
         };
         
         let resetErrorTrace = function() {
