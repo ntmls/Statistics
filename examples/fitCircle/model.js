@@ -92,7 +92,7 @@ let getPriors = function(width, height) {
     return {
         x: Distributions.createUniform(0, width),
         y: Distributions.createUniform(0, height),
-        radius: Distributions.createTriangle(0, 50, width)
+        radius: Distributions.createTriangle(5, 50, width)
     };
 };
 
@@ -132,7 +132,7 @@ let randomStepByInteger = function(number) {
 let proposal = {
     x: Distributions.createTriangle(-60, 0, 60), 
     y: Distributions.createTriangle(-60, 0, 60), 
-    radius: Distributions.createTriangle(-60, 0, 60), 
+    radius: Distributions.createTriangle(-30, 0, 30), 
 }; 
 
 let getMove = function() {

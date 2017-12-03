@@ -8,9 +8,7 @@
     <script src="model.js"></script>
     <script src="imaging.js"></script>
     <script>
-        
-        let smc = ApproximateBayes.createSmc(); 
-        
+    
         let errorTraceState = {
             width: 500,
             height: 100,
@@ -121,22 +119,24 @@
                 "imageSamples": imageSamples
             };
             let priors = getPriors(imageData.width, imageData.height);  
-            let samples = smc.initializeSamples(priors, data, count);
+            
+            let smcConfig = ApproximateBayes
+                .createSmcConfig(data, count, priors)
+            let smc = ApproximateBayes.createSmc(smcConfig); 
+            
+            let samples = smc.initializeSamples();
             let scheduler = smc.scheduleThresholdsByPercentage(400000, 700, .90);
             
             var result = smc.resample(
                 smc.normalizeWeights(samples), 
-                count, 
-                priors, 
-                data,
                 scheduler, 
                 scheduler.init); 
-            render(data, result.newSamples);
+            render(data, result.newParticles);
             
             var iter = function() {
                 if (result != null) {
                     result = result.next();
-                    render(data, result.newSamples);   
+                    render(data, result.newParticles);
                     setTimeout(iter, 0);
                 }
             };

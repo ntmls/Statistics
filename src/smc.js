@@ -1,10 +1,14 @@
 var ApproximateBayes = (function() {
     
-    function SMC() {
+    function SMC(config) {
         
-        this.initializeSamples = function(priors, data, count) {
+        var data = config.data; 
+        var particleCount = config.particleCount;
+        var priors = config.priors;
+        
+        this.initializeSamples = function() {
             let samples = [];
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < particleCount; i++) {
                 let params = parametersFromPriors(priors);
                 let model = generateModel(params);
                 let distance = compare(data, model, Number.MAX_VALUE);
@@ -19,32 +23,32 @@ var ApproximateBayes = (function() {
             return samples;
         };
 
-        let sampleFromWeighted = function(samples) {
+        let sampleFromWeighted = function(particles) {
             let r = Math.random();
             let sum = 0;
-            let count = samples.length;
-            for (let i = 0; i < count; i++) {
-                sum = sum + samples[i].weight;
+            //let count = samples.length;
+            for (let i = 0; i < particleCount; i++) {
+                sum = sum + particles[i].weight;
                 if (r <= sum) {
-                    return samples[i];
+                    return particles[i];
                 }
             }
-            return samples[count - 1];
+            return particles[particleCount - 1];
         };
 
-        let sortByWeight = function(samples) {
-            let sorted = samples.sort(function(a, b) {
+        let sortByWeight = function(particles) {
+            let sorted = particles.sort(function(a, b) {
                 return b.weight - a.weight;
             });
             return sorted;
         }; 
 
-        function _normalizeWeights(samples) {
-            let weights = samples.map(function(x) { 
+        function _normalizeWeights(particles) {
+            let weights = particles.map(function(x) { 
                 return x.weight; 
             });  
             let sum = weights.reduce(add, 0);
-            return samples.map(function(x) {
+            return particles.map(function(x) {
                 return {
                     parameters: x.parameters, 
                     model: x.model,
@@ -57,18 +61,18 @@ var ApproximateBayes = (function() {
         this.normalizeWeights = _normalizeWeights;
 
         function _resample(
-            oldSamples, count, priors, data, scheduler, threshold) {
+            oldParticles, scheduler, threshold) {
 
-            let newSamples = [];
+            let newParticles = [];
             let i = 0;
             let rejectCount = 0;
             let maxDist = 0;
-            while (i < count) {
-                let oldSample = sampleFromWeighted(oldSamples);
-                let move = getMove(oldSample.parameters);
-                let newParams = moveParameters(oldSample.parameters, move);
+            while (i < particleCount) {
+                let oldParticle = sampleFromWeighted(oldParticles);
+                let move = getMove(oldParticle.parameters);
+                let newParams = moveParameters(oldParticle.parameters, move);
                 let priorProb = priorProbabilityOf(priors)(newParams);
-                let importanceProb = probabilityOfSample(oldSamples, newParams);
+                let importanceProb = probabilityOfSample(oldParticles, newParams);
                 let newModel = generateModel(newParams);
                 let newDistance = compare(data, newModel, threshold);
 
@@ -77,13 +81,13 @@ var ApproximateBayes = (function() {
                     importanceProb > 0) 
                 {
                     let newWeight = priorProb / importanceProb; 
-                    let newSample = {
+                    let newParticle = {
                         parameters: newParams,
                         model: newModel,
                         distance: newDistance,
                         weight: newWeight
                     };
-                    newSamples.push(newSample);
+                    newParticles.push(newParticle);
                     i = i + 1;
                 } else {
                     rejectCount = rejectCount + 1;
@@ -92,19 +96,16 @@ var ApproximateBayes = (function() {
                     }
                 }
             }
-            //render(data, newSamples);
+            
             if (!scheduler.stop(threshold)) {
                 var sampleNext =  function() {
                     return _resample(
-                        sortByWeight(_normalizeWeights(newSamples)), 
-                        count, 
-                        priors, 
-                        data,
+                        sortByWeight(_normalizeWeights(newParticles)), 
                         scheduler, 
-                        scheduler.next(threshold, newSamples)); 
+                        scheduler.next(threshold, newParticles)); 
                 };
                 return {
-                    newSamples: newSamples, 
+                    newParticles: newParticles, 
                     next: sampleNext
                 };
             } else {
@@ -154,12 +155,31 @@ var ApproximateBayes = (function() {
         };
     }
     
-    let createSmc = function() {
-        return new SMC()
+    function SmcConfig(
+        data, 
+        particleCount, 
+        priors) 
+    {
+        this.data = data;
+        this.particleCount = particleCount;
+        this.priors = priors;
     }
     
+    let createSmc = function(config) {
+        return new SMC(config);
+    };
+    
+    let createSmcConfig = function(data, particleCount, priors) {
+        return new SmcConfig(
+            data, 
+            particleCount, 
+            priors
+        );        
+    };
+    
     return {
-        createSmc: createSmc  
+        createSmc: createSmc, 
+        createSmcConfig: createSmcConfig
     };
     
 })(); 
