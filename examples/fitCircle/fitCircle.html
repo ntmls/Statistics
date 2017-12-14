@@ -225,29 +225,22 @@
                 "imageSamples": imageSamples
             };
             
-            let priors = getPriors(imageWidth, imageHeight);  
+            let priors = getPriors(imageWidth, imageHeight);
+            let scheduler = ApproximateBayes.createScheduler(5000, 10, .90);
             let smcConfig = ApproximateBayes.createSmcConfig(
-                data, count, priors);
+                data, count, priors, scheduler);
             let smc = ApproximateBayes.createSmc(smcConfig); 
             
-            let samples = smc.initializeSamples();
-            let scheduler = smc.scheduleThresholdsByPercentage(5000, 10, .90);
-            
-            var result = smc.resample(
-                smc.normalizeWeights(samples), 
-                scheduler, 
-                scheduler.init); 
-            render(data, result.newParticles);
+            smc.initializeSamples();
             
             var iter = function() {
-                if (result != null) {
-                    result = result.next();
-                    render(data, result.newParticles);   
+                render(data, smc.getParticles());
+                if (smc.next()) {
                     setTimeout(iter, 0);
                 }
             };
             
-            setTimeout(iter, 0);
+            iter();
             
         };
         
