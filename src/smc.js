@@ -5,6 +5,9 @@ var ApproximateBayes = (function() {
         var data = config.data; 
         var particleCount = config.particleCount;
         var priors = config.priors;
+        var oldParticles;
+        var scheduler = config.scheduler;
+        var threshold = scheduler.init;
         
         this.initializeSamples = function() {
             let samples = [];
@@ -20,7 +23,11 @@ var ApproximateBayes = (function() {
                 };
                 samples.push(sample);
             }
-            return samples;
+            oldParticles = _normalizeWeights(samples);
+        };
+        
+        this.getParticles = function() {
+            return oldParticles;  
         };
 
         let sampleFromWeighted = function(particles) {
@@ -59,10 +66,8 @@ var ApproximateBayes = (function() {
         };
         
         this.normalizeWeights = _normalizeWeights;
-
-        function _resample(
-            oldParticles, scheduler, threshold) {
-
+        
+        function _next() {
             let newParticles = [];
             let i = 0;
             let rejectCount = 0;
@@ -98,25 +103,43 @@ var ApproximateBayes = (function() {
             }
             
             if (!scheduler.stop(threshold)) {
-                var sampleNext =  function() {
-                    return _resample(
-                        sortByWeight(_normalizeWeights(newParticles)), 
-                        scheduler, 
-                        scheduler.next(threshold, newParticles)); 
-                };
-                return {
-                    newParticles: newParticles, 
-                    next: sampleNext
-                };
+                oldParticles = sortByWeight(_normalizeWeights(newParticles));
+                threshold = scheduler.next(threshold, newParticles); 
+                return true;
             } else {
-                return null; 
-            }; 
-        };
+                return false; 
+            };
+        }
         
-        this.resample = _resample;
+        this.next = _next;
 
-        // returns a threshold scheduler
-        this.scheduleThresholdsByPercentage = function(
+        let probabilityOfSample = function(oldSamples, parameters) {
+            let totalProb = 0; 
+            for (let i = 0; i < oldSamples.length; i++) {
+                let oldSample = oldSamples[i];
+                let move = subtractParameters(parameters, oldSample.parameters);
+                let prob = oldSample.weight * probabilityOfMove(move);
+                totalProb = totalProb + prob;
+            }
+            if (isNaN(totalProb)) throw 'Invalid Probablity';
+            return totalProb;
+        };
+    }
+    
+    function SmcConfig(
+        data, 
+        particleCount, 
+        priors, 
+        scheduler) 
+    {
+        this.data = data;
+        this.particleCount = particleCount;
+        this.priors = priors;
+        this.scheduler = scheduler;
+    }
+    
+    // returns a threshold scheduler
+    let createScheduler = function(
             maxDistance, 
             minThreshhold, 
             percent) 
@@ -142,44 +165,29 @@ var ApproximateBayes = (function() {
             }; 
         };
 
-        let probabilityOfSample = function(oldSamples, parameters) {
-            let totalProb = 0; 
-            for (let i = 0; i < oldSamples.length; i++) {
-                let oldSample = oldSamples[i];
-                let move = subtractParameters(parameters, oldSample.parameters);
-                let prob = oldSample.weight * probabilityOfMove(move);
-                totalProb = totalProb + prob;
-            }
-            if (isNaN(totalProb)) throw 'Invalid Probablity';
-            return totalProb;
-        };
-    }
-    
-    function SmcConfig(
-        data, 
-        particleCount, 
-        priors) 
-    {
-        this.data = data;
-        this.particleCount = particleCount;
-        this.priors = priors;
-    }
     
     let createSmc = function(config) {
         return new SMC(config);
     };
     
-    let createSmcConfig = function(data, particleCount, priors) {
+    let createSmcConfig = function(
+        data, 
+        particleCount, 
+        priors, 
+        scheduler) 
+    {
         return new SmcConfig(
             data, 
             particleCount, 
-            priors
+            priors, 
+            scheduler
         );        
     };
     
     return {
-        createSmc: createSmc, 
-        createSmcConfig: createSmcConfig
+        createScheduler: createScheduler,
+        createSmcConfig: createSmcConfig, 
+        createSmc: createSmc
     };
     
 })(); 
