@@ -84,8 +84,8 @@ let compare = function(data, model, threshold) {
         // exit early if we can for performance reasons
         if (sum > threshold) { return sum; }
     }
-    if (countIn == 0 || countOut == 0) { return 99999 };
-    return sum;
+    if (countIn == 0 || countOut == 0) { return 99999999 };
+    return sum * sum;
 };
 
 let getPriors = function(width, height) {
