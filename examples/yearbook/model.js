@@ -191,7 +191,7 @@ let compare = function(data, model, threshold) {
     let lastRect = model[model.length - 1]; 
     if (lastRect.point.x + lastRect.width > maxX) { sum = sum * 10 }
     if (lastRect.point.y + lastRect.height > maxY) { sum = sum * 10 }
-    return sum;
+    return sum * sum;
 };
 
 let isBackGroundColor = function(bgColor) {

@@ -226,20 +226,18 @@
             };
             
             let priors = getPriors(imageWidth, imageHeight);
-            let scheduler = ApproximateBayes.createScheduler(5000, 10, .90);
+            let scheduler = ApproximateBayes.createScheduler(99999999, 10, .90);
             let smcConfig = ApproximateBayes.createSmcConfig(
                 data, count, priors, scheduler);
             let smc = ApproximateBayes.createSmc(smcConfig); 
             
             smc.initializeSamples();
-            
             var iter = function() {
                 render(data, smc.getParticles());
                 if (smc.next()) {
                     setTimeout(iter, 0);
                 }
             };
-            
             iter();
             
         };
