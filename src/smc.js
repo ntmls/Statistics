@@ -1,4 +1,4 @@
-var ApproximateBayes = (function() {
+(function(exports) {
     
     function SMC(config) {
         
@@ -184,12 +184,12 @@ var ApproximateBayes = (function() {
         );        
     };
     
-    return {
+    exports.ApproximateBayes =  {
         createScheduler: createScheduler,
         createSmcConfig: createSmcConfig, 
         createSmc: createSmc
     };
     
-})(); 
+})(typeof exports === 'undefined' ? this : exports ); 
 
 
