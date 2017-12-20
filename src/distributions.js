@@ -1,4 +1,4 @@
-var Distributions = function() {
+(function(exports) {
 
     var sequence = function(n) {
         var result = [];
@@ -175,7 +175,7 @@ var Distributions = function() {
     var createBinomial = function(trials, rate) { return new Binomial(trials, rate); };
     var createNormal = function(mean, stdv) { return new Normal(mean, stdv); };
     
-    var exports  = {
+    exports.Distributions = {
         "createBernoulli": createBernoulli,
         "createUniform": createUniform,
         "createTriangle": createTriangle,
@@ -184,6 +184,5 @@ var Distributions = function() {
         "factorial": factorial, 
         "choose": choose
     };
-    return exports;
     
-} ();
+})(typeof exports === 'undefined' ? this : exports);
