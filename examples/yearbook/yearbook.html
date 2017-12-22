@@ -5,6 +5,7 @@
     <script src="../../src/list.js"></script>
     <script src="../../src/fun.js"></script>
     <script src="../../src/smc.js"></script>
+    <script src="../../src/poisson2d.js"></script>
     <script src="model.js"></script>
     <script src="imaging.js"></script>
     <script>
@@ -113,7 +114,7 @@
         let begin = function(image) {
             var count = 200;
             let imageData = getImageData(image);
-            let imageSamples = sampleImage(imageData, 5000);
+            let imageSamples = sampleImage(imageData);
             let data = {
                 "image": image,
                 "imageSamples": imageSamples
