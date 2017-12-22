@@ -5,6 +5,7 @@
     <script src="../../src/list.js"></script>
     <script src="../../src/fun.js"></script>
     <script src="../../src/smc.js"></script>
+    <script src="../../src/poisson2d.js"></script>
     <script src="model.js"></script>
     <script>
                 
@@ -97,21 +98,6 @@
             // clear
             ctx.clearRect(0, 0, width, height);
             
-            // draw the target
-            /*
-            ctx.beginPath();
-            ctx.arc(
-                Math.floor(data.target.x), 
-                Math.floor(data.target.y), 
-                Math.floor(data.target.radius),
-                0, Math.PI * 2
-            );
-            ctx.fillStyle = 'green';
-            ctx.fill();
-            */
-            
-            //ctx.drawImage(data.image, 0, 0);
-            
             //sort models by distance
             sorted = models.sort(function(a, b) {
                return a.distance - b.distance;
@@ -185,14 +171,17 @@
         };
         
         // samples the pixels whithin an image.
-        var createTargetImage = function(width, height, target, count) {
-            var xs = Distributions.createUniform(0, width - 1);
-            var ys = Distributions.createUniform(0, height - 1);
+        var createTargetImage = function(width, height, target) {
+            var points = poisson2d.create(width, height, 7, 60);
+            var count = points.length;
             var result = [];
             for(var i = 0; i < count; i++) {
+                /*
                 let point = new Point(
                     xs.sample(),  
                     ys.sample());
+                    */
+                let point = points[i];
                 var color;
                 if (isPointInModel(point, target)) {
                     color = new Color(0, 0, 0);
@@ -218,8 +207,7 @@
             let imageSamples = createTargetImage(
                 imageWidth, 
                 imageHeight, 
-                target, 
-                7500);
+                target);
             let data = {
                 "target": target,
                 "imageSamples": imageSamples
