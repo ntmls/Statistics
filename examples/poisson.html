@@ -6,28 +6,43 @@
         <canvas id="canvas" width="640" height="480"></canvas>
         <script>
             
-            var drawDot = function(context, x, y) {
+            var drawDot = function(context, x, y, r) {
                 context.beginPath();
-                context.moveTo(x,y);
-                context.lineTo(x+1,y+1);
-                context.stroke();
+                context.moveTo(x + r,y);
+                //context.lineTo(x+1,y+1);
+                context.arc(x, y, r, 0, Math.PI * 2);
+                context.fill();
             };
+            
           
             var canvas = document.getElementById('canvas');
             var width = canvas.width;
             var height = canvas.height;
-            var output = poisson2d.create(width, height, 7, 60);
-
+            var density = function(x, y) {
+                let r = y / height;
+                return r*r;
+            };
+            
+            var now = new Date();
+            var start = now.getTime();
+            var output = poisson2d.createAdaptive(width, height, 3, 20, density, 30);
+            now = new Date();
+            console.log(now.getTime() - start);
+            
             var context = canvas.getContext('2d');
             context.fillRect(0,0, width, height);
             context.strokeStyle = "white";
             context.strokeWidth = 1;
+            context.fillStyle = "rgba(255, 255, 255, 1)";
 
-            for (let i = 0; i < output.length; i++) {
+            let count = output.length;
+            for (let i = 0; i < count; i++) {
                 drawDot(
                     context, 
                     Math.floor(output[i].x), 
-                    Math.floor(output[i].y));
+                    Math.floor(output[i].y),
+                    1
+                );
             }
 
             console.log(output.length);
