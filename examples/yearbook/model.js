@@ -107,27 +107,8 @@ let makeRow = function(xOffset, width, gap, columns) {
         let points = makeRowPoints(xOffset, width, gap)(columns);
         return map(shiftPointDown(y))(points);     
     };
-};
-
-// generateModel :: ModelParams -> Model
-let generateModel = function(modelParams) {
-    let rectWidth = ((modelParams.width + modelParams.gap) / modelParams.cols) - modelParams.gap;
-    let rectHeight = ((modelParams.height + modelParams.gap) / modelParams.rows) - modelParams.gap;
-
-    // toGrid :: number -> [rect]
-    let toGrid = sequence(
-        arrayFromCount, 
-        spreadIndices(modelParams.height, modelParams.gap), 
-        map(function(y) { return y + modelParams.y; }),
-        flatMap(makeRow(modelParams.x, modelParams.width, modelParams.gap, modelParams.cols)), 
-        map(pointToRect), 
-        map(makeRectWider(rectWidth)), 
-        map(makeRectTaller(rectHeight))
-    );
-
-    return toGrid(modelParams.rows);
-}
-
+};  
+    
 let isPointInRect = function(point, rect) {
     if (point.x < rect.point.x) { return  false; } 
     if (point.y < rect.point.y) { return  false; }
@@ -157,86 +138,6 @@ let colorDistanceSquared = function(a, b) {
     return (dr*dr + dg*dg + db*db) / 195075; 
 };
 
-let compare = function(data, model, threshold) {
-    let sum = 0;
-    if (data.imageSamples.count === undefined) {
-        data.imageSamples.count = data.imageSamples.length;
-    }
-    let bgColor = new Color(250, 250, 250);
-    let maxX = 0;
-    let maxY = 0;
-    let cornerX = 0;
-    let cornerY = 0;
-    let countIn = 0;
-    let countOut = 0;
-    let len = data.imageSamples.count;
-    for(let i = 0; i < len; i++) {
-        let sample = data.imageSamples[i];
-        let isin = isPointInModel(sample.point, model);
-        let isBg = isBackGroundColor(bgColor)(sample.color);
-        if (isin) {
-            if (isBg) {
-                sum = sum + 1;
-            } 
-        } else {
-            if (!isBg) {
-                sum = sum + 1;
-            }
-        }
-        if (sample.point.x > maxX) { maxX = sample.point.x }
-        if (sample.point.y > maxY) { maxY = sample.point.y }
-        
-        if (sum > threshold) { return sum; }
-    }
-    let lastRect = model[model.length - 1]; 
-    if (lastRect.point.x + lastRect.width > maxX) { sum = sum * 10 }
-    if (lastRect.point.y + lastRect.height > maxY) { sum = sum * 10 }
-    return sum * sum;
-};
-
-let isBackGroundColor = function(bgColor) {
-    return function(color) {
-        let dist = colorDistanceSquared(bgColor, color);
-        return (dist < .006);
-    };
-};
-
-let getPriors = function(width, height) {
-    return {
-        x: Distributions.createTriangle(0, 0, width * .2),
-        y: Distributions.createTriangle(0, 0, height * .2),
-        width: Distributions.createTriangle(0, width, width),
-        height: Distributions.createTriangle(0, height, height),
-        gap: Distributions.createTriangle(0, 0, width * .25),
-        rows: Distributions.createUniform(4, 7),
-        cols: Distributions.createUniform(4, 7)
-    };
-};
-
-let parametersFromPriors = function(priors) {
-    return new ModelParams(
-        Math.floor(priors.x.sample()),
-        Math.floor(priors.y.sample()),
-        Math.floor(priors.width.sample()),
-        Math.floor(priors.height.sample()),
-        Math.floor(priors.gap.sample()),
-        Math.floor(priors.rows.sample()),
-        Math.floor(priors.cols.sample())
-    );
-}; 
-
-let priorProbabilityOf = function(priors) {
-    return function(parameters) {
-        return priors.x.densityAt(parameters.x) * 
-            priors.y.densityAt(parameters.y) *
-            priors.width.densityAt(parameters.width) *
-            priors.height.densityAt(parameters.height) * 
-            priors.gap.densityAt(parameters.gap) *
-            priors.rows.densityAt(parameters.rows) *
-            priors.cols.densityAt(parameters.cols);
-    };
-};
-
 let randomStepByOne = function() {
     let r = Math.random();
     if (r < .333) { return -1; }
@@ -254,53 +155,174 @@ let randomStepByInteger = function(number) {
     }
 };
 
-let getMove = function() {
-    return new ModelParams(
-        randomStepByInteger(5),
-        randomStepByInteger(5),
-        randomStepByInteger(5),
-        randomStepByInteger(5),
-        randomStepByOne(),
-        randomStepByOne(),
-        randomStepByOne()
-    );    
-};
-
-let probabilityOfMove = function(move) {
-    let probInRange = function(min, max, value) {
-        if (value < min) { return 0; }
-        if (value > max) { return 0; }
-        return 1 / ((max - min) + 1);
+function YearbookConfig(image) {
+    
+    var width = image.width;
+    var height = image.height;
+    let imageData = getImageData(image);
+    let imageSamples = sampleImage(imageData);
+    let dataLength = imageSamples.length;
+    let bgColor = new Color(250, 250, 250);
+    
+    let data = {
+        "image": image,
+        "imageSamples": imageSamples
     };
-    return probInRange(-5, 5, move.x) * 
-         probInRange(-5, 5, move.y) * 
-         probInRange(-5, 5, move.width)* 
-         probInRange(-5, 5, move.height) * 
-         probInRange(-1, 1, move.gap) * 
-         probInRange(-1, 1, move.rows) * 
-         probInRange(-1, 1, move.cols) 
-};
+    
+    this.getPriors = function() {
+        return {
+            x: Distributions.createTriangle(0, 0, width * .2),
+            y: Distributions.createTriangle(0, 0, height * .2),
+            width: Distributions.createTriangle(0, width, width),
+            height: Distributions.createTriangle(0, height, height),
+            gap: Distributions.createTriangle(0, 0, width * .25),
+            rows: Distributions.createUniform(4, 7),
+            cols: Distributions.createUniform(4, 7)
+        };
+    };
+    
+    this.getData = function() {
+        return data;
+    };
+    
+    this.getScheduler = function() {
+        return ApproximateBayes.createScheduler(200000000000, 700, .90);
+    };
+    
+    this.generateParameters = function(priors) {
+        return new ModelParams(
+            Math.floor(priors.x.sample()),
+            Math.floor(priors.y.sample()),
+            Math.floor(priors.width.sample()),
+            Math.floor(priors.height.sample()),
+            Math.floor(priors.gap.sample()),
+            Math.floor(priors.rows.sample()),
+            Math.floor(priors.cols.sample())
+        );
+    }; 
+    
+    this.generateModel = function(modelParams) {
+        let rectWidth = ((modelParams.width + modelParams.gap) / modelParams.cols) - modelParams.gap;
+        let rectHeight = ((modelParams.height + modelParams.gap) / modelParams.rows) - modelParams.gap;
 
-let moveParameters = function(parameter, move) {
-    return new ModelParams(
-        parameter.x + move.x, 
-        parameter.y + move.y,
-        parameter.width + move.width,
-        parameter.height + move.height,
-        parameter.gap + move.gap,
-        parameter.rows + move.rows,
-        parameter.cols + move.cols
-    );
-};
+        // toGrid :: number -> [rect]
+        let toGrid = sequence(
+            arrayFromCount, 
+            spreadIndices(modelParams.height, modelParams.gap), 
+            map(function(y) { return y + modelParams.y; }),
+            flatMap(makeRow(modelParams.x, modelParams.width, modelParams.gap, modelParams.cols)), 
+            map(pointToRect), 
+            map(makeRectWider(rectWidth)), 
+            map(makeRectTaller(rectHeight))
+        );
 
-let subtractParameters = function(a, b) {
-    return new ModelParams(
-        a.x - b.x, 
-        a.y - b.y, 
-        a.width - b.width,
-        a.height - b.height,
-        a.gap - b.gap, 
-        a.rows - b.rows, 
-        a.cols - b.cols
-    );
-}; 
+        return toGrid(modelParams.rows);
+    };
+    
+    this.isBackGroundColor = function(color) {
+        let dist = colorDistanceSquared(bgColor, color);
+        return (dist < .006);
+    };
+    
+    /*
+    Samples from a distribution that determines
+    the amount to perturb the parameters
+    */
+    this.getMove = function() {
+        return new ModelParams(
+            randomStepByInteger(5),
+            randomStepByInteger(5),
+            randomStepByInteger(5),
+            randomStepByInteger(5),
+            randomStepByOne(),
+            randomStepByOne(),
+            randomStepByOne()
+        );
+    };
+
+    /*
+    gets the probability that a set of parameters
+    were perturbed by the specified amounts.
+    */
+    this.probabilityOfMove = function(move) {
+        let probInRange = function(min, max, value) {
+            if (value < min) { return 0; }
+            if (value > max) { return 0; }
+            return 1 / ((max - min) + 1);
+        };
+        return probInRange(-5, 5, move.x) * 
+             probInRange(-5, 5, move.y) * 
+             probInRange(-5, 5, move.width)* 
+             probInRange(-5, 5, move.height) * 
+             probInRange(-1, 1, move.gap) * 
+             probInRange(-1, 1, move.rows) * 
+             probInRange(-1, 1, move.cols) 
+    };
+    
+    this.priorProbabilityOf = function(priors, parameters) {
+        return priors.x.densityAt(parameters.x) * 
+            priors.y.densityAt(parameters.y) *
+            priors.width.densityAt(parameters.width) *
+            priors.height.densityAt(parameters.height) * 
+            priors.gap.densityAt(parameters.gap) *
+            priors.rows.densityAt(parameters.rows) *
+            priors.cols.densityAt(parameters.cols);
+    };
+    
+    this.moveParameters = function(parameter, move) {
+        return new ModelParams(
+            parameter.x + move.x, 
+            parameter.y + move.y,
+            parameter.width + move.width,
+            parameter.height + move.height,
+            parameter.gap + move.gap,
+            parameter.rows + move.rows,
+            parameter.cols + move.cols
+        );
+    };
+    
+    this.subtractParameters = function(a, b) {
+        return new ModelParams(
+            a.x - b.x, 
+            a.y - b.y, 
+            a.width - b.width,
+            a.height - b.height,
+            a.gap - b.gap, 
+            a.rows - b.rows, 
+            a.cols - b.cols
+        );
+    }; 
+
+    this.compare = function(model, threshold) {
+        let sum = 0;
+        let maxX = 0;
+        let maxY = 0;
+        let cornerX = 0;
+        let cornerY = 0;
+        let countIn = 0;
+        let countOut = 0;
+        for(let i = 0; i < dataLength; i++) {
+            let sample = imageSamples[i];
+            let isin = isPointInModel(sample.point, model);
+            let isBg = this.isBackGroundColor(sample.color);
+            if (isin) {
+                if (isBg) {
+                    sum = sum + 1;
+                } 
+            } else {
+                if (!isBg) {
+                    sum = sum + 1;
+                }
+            }
+            if (sample.point.x > maxX) { maxX = sample.point.x }
+            if (sample.point.y > maxY) { maxY = sample.point.y }
+
+            if (sum > threshold) { return sum; }
+        }
+        let lastRect = model[model.length - 1]; 
+        if (lastRect.point.x + lastRect.width > maxX) { sum = sum * 10 }
+        if (lastRect.point.y + lastRect.height > maxY) { sum = sum * 10 }
+        return sum * sum;
+    };
+    
+};

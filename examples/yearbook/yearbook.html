@@ -68,7 +68,8 @@
             maxErrorElem.innerHTML = errorTraceState.maxError;
         };
         
-        let render = function(data, models) {
+        let render = function(config, models) {
+            let data = config.getData();
             let canvas = document.getElementById("displayCanvas");
             let ctx = canvas.getContext('2d');
             ctx.drawImage(data.image, 0, 0);
@@ -96,8 +97,8 @@
             // image samples
             let toPoint = function(x) { return x.point; };
             let bgColor = new Color(250, 250, 250);
-            let isBg = function(x) { return isBackGroundColor(bgColor)(x.color); };
-            let isNotBg = function(x) { return !isBackGroundColor(bgColor)(x.color); };
+            let isBg = function(x) { return config.isBackGroundColor(x.color); };
+            let isNotBg = function(x) { return !config.isBackGroundColor(x.color); };
             let ins = data.imageSamples.filter(isBg);
             ctx.strokeStyle = "blue";
             drawPoints(ctx)(ins.map(toPoint));
@@ -112,23 +113,21 @@
         };
         
         let begin = function(image) {
-            var count = 200;
-            let imageData = getImageData(image);
-            let imageSamples = sampleImage(imageData);
-            let data = {
-                "image": image,
-                "imageSamples": imageSamples
-            };
-            
+            var count = 200;     
+            /*
             let priors = getPriors(imageData.width, imageData.height);  
             let scheduler = ApproximateBayes.createScheduler(200000000000, 700, .90);
+            let generator = new YearbookGenerator(bg, data, imageData.width, imageData.height);
             let smcConfig = ApproximateBayes
-                .createSmcConfig(data, count, priors, scheduler);
-            let smc = ApproximateBayes.createSmc(smcConfig); 
+                .createSmcConfig(data, count, priors, scheduler, generator);
+            */
+            let config = new YearbookConfig(image);
+            let data = config.getData();
+            let smc = ApproximateBayes.createSmc(config); 
             
-            smc.initializeSamples();
+            smc.initializeParticles(count);
             var iter = function() {
-                render(data, smc.getParticles());
+                render(config, smc.getParticles());
                 if (smc.next()) {
                     setTimeout(iter, 0);
                 }
