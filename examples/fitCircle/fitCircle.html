@@ -170,56 +170,13 @@
             
         };
         
-        // samples the pixels whithin an image.
-        var createTargetImage = function(width, height, target) {
-            var points = poisson2d.create(width, height, 7, 60);
-            var count = points.length;
-            var result = [];
-            for(var i = 0; i < count; i++) {
-                /*
-                let point = new Point(
-                    xs.sample(),  
-                    ys.sample());
-                    */
-                let point = points[i];
-                var color;
-                if (isPointInModel(point, target)) {
-                    color = new Color(0, 0, 0);
-                } else {
-                    color = new Color(255, 255, 255);
-                }
-                result.push({
-                    point: point,
-                    color: color
-                });
-            }
-            return result;
-        };
-        
         let begin = function() {
-            var count = 150,
-                imageWidth = 640,
-                imageHeight = 480;
-            var target = new Circle(
-                Math.random() * imageWidth,
-                Math.random() * imageHeight, 
-                Math.random() * 100 + 25);
-            let imageSamples = createTargetImage(
-                imageWidth, 
-                imageHeight, 
-                target);
-            let data = {
-                "target": target,
-                "imageSamples": imageSamples
-            };
+            var count = 200;
+            let config = new FitCircleConfig();
+            let data = config.getData();
+            let smc = ApproximateBayes.createSmc(config); 
             
-            let priors = getPriors(imageWidth, imageHeight);
-            let scheduler = ApproximateBayes.createScheduler(99999999, 10, .90);
-            let smcConfig = ApproximateBayes.createSmcConfig(
-                data, count, priors, scheduler);
-            let smc = ApproximateBayes.createSmc(smcConfig); 
-            
-            smc.initializeSamples();
+            smc.initializeParticles(count);
             var iter = function() {
                 render(data, smc.getParticles());
                 if (smc.next()) {
@@ -227,7 +184,6 @@
                 }
             };
             iter();
-            
         };
         
         let resetErrorTrace = function() {

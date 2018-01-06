@@ -2,28 +2,29 @@
     
     function SMC(config) {
         
-        var data = config.data; 
-        var particleCount = config.particleCount;
-        var priors = config.priors;
-        var oldParticles;
-        var scheduler = config.scheduler;
+        var data = config.getData(); 
+        var priors = config.getPriors();
+        var scheduler = config.getScheduler();
         var threshold = scheduler.init;
+        var oldParticles;
+        var particleCount = 0;
         
-        this.initializeSamples = function() {
-            let samples = [];
+        this.initializeParticles = function(_particleCount) {
+            particleCount = _particleCount;
+            let particles = [];
             for (let i = 0; i < particleCount; i++) {
-                let params = parametersFromPriors(priors);
-                let model = generateModel(params);
-                let distance = compare(data, model, Number.MAX_VALUE);
-                let sample = {
+                let params = config.generateParameters(priors);
+                let model = config.generateModel(params);
+                let distance = config.compare(model, Number.MAX_VALUE);
+                let particle = {
                     parameters: params,
                     model: model,
                     distance: distance,
                     weight: 1.0
                 };
-                samples.push(sample);
+                particles.push(particle);
             }
-            oldParticles = _normalizeWeights(samples);
+            oldParticles = _normalizeWeights(particles);
         };
         
         this.getParticles = function() {
@@ -33,7 +34,6 @@
         let sampleFromWeighted = function(particles) {
             let r = Math.random();
             let sum = 0;
-            //let count = samples.length;
             for (let i = 0; i < particleCount; i++) {
                 sum = sum + particles[i].weight;
                 if (r <= sum) {
@@ -74,12 +74,12 @@
             let maxDist = 0;
             while (i < particleCount) {
                 let oldParticle = sampleFromWeighted(oldParticles);
-                let move = getMove(oldParticle.parameters);
-                let newParams = moveParameters(oldParticle.parameters, move);
-                let priorProb = priorProbabilityOf(priors)(newParams);
-                let importanceProb = probabilityOfSample(oldParticles, newParams);
-                let newModel = generateModel(newParams);
-                let newDistance = compare(data, newModel, threshold);
+                let move = config.getMove(oldParticle.parameters);
+                let newParams = config.moveParameters(oldParticle.parameters, move);
+                let priorProb = config.priorProbabilityOf(priors, newParams);
+                let importanceProb = probabilityOfParticle(oldParticles, newParams);
+                let newModel = config.generateModel(newParams);
+                let newDistance = config.compare(newModel, threshold);
 
                 if (newDistance <= threshold &&
                     priorProb > 0 &&
@@ -94,9 +94,10 @@
                     };
                     newParticles.push(newParticle);
                     i = i + 1;
+                    rejectCount = 0;
                 } else {
                     rejectCount = rejectCount + 1;
-                    if (rejectCount > 5000) {
+                    if (rejectCount > 1000) {
                         throw "stuck";
                     }
                 }
@@ -113,12 +114,13 @@
         
         this.next = _next;
 
-        let probabilityOfSample = function(oldSamples, parameters) {
+        let probabilityOfParticle = function(particles, parameters) {
             let totalProb = 0; 
-            for (let i = 0; i < oldSamples.length; i++) {
-                let oldSample = oldSamples[i];
-                let move = subtractParameters(parameters, oldSample.parameters);
-                let prob = oldSample.weight * probabilityOfMove(move);
+            let len = particles.length;
+            for (let i = 0; i < len; i++) {
+                let particle = particles[i];
+                let move = config.subtractParameters(parameters, particle.parameters);
+                let prob = particle.weight * config.probabilityOfMove(move);
                 totalProb = totalProb + prob;
             }
             if (isNaN(totalProb)) throw 'Invalid Probablity';
@@ -143,53 +145,35 @@
             maxDistance, 
             minThreshhold, 
             percent) 
-        {
-            return {
-                init: maxDistance,
-                next: function(threshold, samples) {
-                    let ds = samples.map(function(x) {
-                        return x.distance;
-                    });
-                    let sorted = ds.sort(function(a,b) {
-                        return a - b;
-                    });
-                    let index = Math.floor(percent * sorted.length);
-                    return sorted[index];
-                },
-                stop: function(threshold, samples) {
-                    if (threshold < minDistance) { 
-                        return true;
-                    }
-                    return false;
+    {
+        return {
+            init: maxDistance,
+            next: function(threshold, samples) {
+                let ds = samples.map(function(x) {
+                    return x.distance;
+                });
+                let sorted = ds.sort(function(a,b) {
+                    return a - b;
+                });
+                let index = Math.floor(percent * sorted.length);
+                return sorted[index];
+            },
+            stop: function(threshold, samples) {
+                if (threshold < minDistance) { 
+                    return true;
                 }
-            }; 
-        };
-
+                return false;
+            }
+        }; 
+    };
     
     let createSmc = function(config) {
         return new SMC(config);
     };
     
-    let createSmcConfig = function(
-        data, 
-        particleCount, 
-        priors, 
-        scheduler) 
-    {
-        return new SmcConfig(
-            data, 
-            particleCount, 
-            priors, 
-            scheduler
-        );        
-    };
-    
     exports.ApproximateBayes =  {
         createScheduler: createScheduler,
-        createSmcConfig: createSmcConfig, 
         createSmc: createSmc
     };
     
 })(typeof exports === 'undefined' ? this : exports); 
-
-
