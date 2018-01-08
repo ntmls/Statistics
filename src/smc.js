@@ -30,6 +30,46 @@
         this.getParticles = function() {
             return oldParticles;  
         };
+        
+        let add = function(a,b) {
+            return a+b;  
+        };
+        
+        let divBy = function(denom) {
+            return function(numer) {
+                return numer / denom;
+            };
+        };
+        
+        let multBy = function(a) {
+            return function(b) {
+                return a*b;
+            };
+        };
+        
+        let probabilityOfParticle = function(particles, parameters) {
+            
+            // calculate all the probabilities of moving to these parameters
+            // ftom the previous distribution of particles;
+            let probs = particles.map(function(particle) {
+                let move = config.subtractParameters(parameters, particle.parameters);
+                return config.probabilityOfMove(move);
+            });
+            
+            // normalize those probabilities
+            let totalProb = probs.reduce(add, 0);
+            probs = probs.map(divBy(totalProb));
+            
+            // include the probability of picking the particle from tge previous
+            // set of particles. Aggregate the probabilities.
+            var result = 0;            
+            for (let i = 0; i < particleCount; i++) {
+                let particle = particles[i];
+                result = result + particle.weight * probs[i];
+            }
+            if (isNaN(totalProb)) throw 'Invalid Probablity';
+            return result;
+        };
 
         let sampleFromWeighted = function(particles) {
             let r = Math.random();
@@ -77,24 +117,28 @@
                 let move = config.getMove(oldParticle.parameters);
                 let newParams = config.moveParameters(oldParticle.parameters, move);
                 let priorProb = config.priorProbabilityOf(priors, newParams);
-                let importanceProb = probabilityOfParticle(oldParticles, newParams);
-                let newModel = config.generateModel(newParams);
-                let newDistance = config.compare(newModel, threshold);
+                if (priorProb > 0) {
+                    let newModel = config.generateModel(newParams);
+                    let importanceProb = probabilityOfParticle(oldParticles, newParams);
+                    let newDistance = config.compare(newModel, threshold);
 
-                if (newDistance <= threshold &&
-                    priorProb > 0 &&
-                    importanceProb > 0) 
-                {
-                    let newWeight = priorProb / importanceProb; 
-                    let newParticle = {
-                        parameters: newParams,
-                        model: newModel,
-                        distance: newDistance,
-                        weight: newWeight
-                    };
-                    newParticles.push(newParticle);
-                    i = i + 1;
-                    rejectCount = 0;
+                    if (newDistance <= threshold && importanceProb > 0) {
+                        let newWeight = priorProb / importanceProb; 
+                        let newParticle = {
+                            parameters: newParams,
+                            model: newModel,
+                            distance: newDistance,
+                            weight: newWeight
+                        };
+                        newParticles.push(newParticle);
+                        i = i + 1;
+                        rejectCount = 0;
+                    } else {
+                        rejectCount = rejectCount + 1;
+                        if (rejectCount > 1000) {
+                            throw "stuck";
+                        }
+                    }
                 } else {
                     rejectCount = rejectCount + 1;
                     if (rejectCount > 1000) {
@@ -113,31 +157,6 @@
         }
         
         this.next = _next;
-
-        let probabilityOfParticle = function(particles, parameters) {
-            let totalProb = 0; 
-            let len = particles.length;
-            for (let i = 0; i < len; i++) {
-                let particle = particles[i];
-                let move = config.subtractParameters(parameters, particle.parameters);
-                let prob = particle.weight * config.probabilityOfMove(move);
-                totalProb = totalProb + prob;
-            }
-            if (isNaN(totalProb)) throw 'Invalid Probablity';
-            return totalProb;
-        };
-    }
-    
-    function SmcConfig(
-        data, 
-        particleCount, 
-        priors, 
-        scheduler) 
-    {
-        this.data = data;
-        this.particleCount = particleCount;
-        this.priors = priors;
-        this.scheduler = scheduler;
     }
     
     // returns a threshold scheduler

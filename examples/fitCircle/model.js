@@ -55,7 +55,7 @@ function FitCircleConfig() {
     let target = new Circle(
         Math.random() * imageWidth,
         Math.random() * imageHeight, 
-        Math.random() * 100 + 25);
+        Math.random() * 200 + 25);
     
     let bgColor = new Color(255, 255, 255);
     
@@ -90,6 +90,14 @@ function FitCircleConfig() {
     };
     let scheduler = ApproximateBayes.createScheduler(99999999, 10, .90);
     let dataLength = imageSamples.length;
+    let bgCount = 0, nonBgCount = 0;
+    for (let i = 0; i < dataLength; i++) {
+        if (isBackGroundColor(bgColor)(imageSamples[i].color)) {
+            bgCount += 1;
+        } else {
+            nonBgCount += 1;
+        }
+    }
     
     this.getData = function() {
         return data;  
@@ -107,30 +115,35 @@ function FitCircleConfig() {
     };
     
     this.compare = function(model, threshold) {
-        let sum = 0;
-        let countIn = 0;
-        let countOut = 0;
+        let inAndBg = 0,
+            inAndNotBg = 0,
+            outAndBg = 0,
+            outAndNotBg = 0;
         for(let i = 0; i < dataLength; i++) {
             let sample = data.imageSamples[i];
             let isin = isPointInModel(sample.point, model);
             let isBg = isBackGroundColor(bgColor)(sample.color);
             if (isin) {
                 if (isBg) {
-                    sum = sum + 1;
-                } 
-                countIn++;
-            } else {
-                if (!isBg) {
-                    sum = sum + 1;
+                    inAndBg += 1;
+                } else {
+                    inAndNotBg += 1;
                 }
-                countOut++;
+            } else {
+                if (isBg) {
+                    outAndBg += 1;
+                } else {
+                    outAndNotBg += 1;
+                }
             }
-
-            // exit early if we can for performance reasons
-            if (sum > threshold) { return sum; }
         }
-        if (countIn == 0 || countOut == 0) { return 99999999 };
-        return sum * sum;
+        let inCount = inAndBg + inAndNotBg;
+        let outCount = outAndBg + outAndNotBg;
+        let e1 = inCount - nonBgCount;
+        let e2 = outCount - bgCount;
+        let e3 = inAndBg;
+        let e4 = outAndNotBg;
+        return e1 * e1 + e2 * e2 + e3 * e3 + e4 * e4;
     };
 
     this.getPriors = function() {
@@ -187,26 +200,16 @@ function FitCircleConfig() {
     
 }
 
-let randomStepByOne = function() {
-    let r = Math.random();
-    if (r < .333) { return -1; }
-    if (r < .666) { return 1; }
-    return 0;
+let proposal = {
+    x: Distributions.createNormal(0, 25), 
+    y: Distributions.createNormal(0, 25),
+    radius: Distributions.createNormal(0, 5)
 };
 
-let randomStepByInteger = function(number) {
-    let r = Math.random();
-    let n = Math.floor(.5 + Math.random() * (number + .5));
-    if (r < .5) {
-        return n;
-    } else {
-        return -n;
-    }
-};
-
+/*
 let proposal = {
     x: Distributions.createTriangle(-60, 0, 60), 
-    y: Distributions.createTriangle(-60, 0, 60), 
-    radius: Distributions.createTriangle(-15, 0, 15), 
+    y: Distributions.createTriangle(-60, 0, 60),
+    radius: Distributions.createTriangle(-15, 0, 15)
 }; 
-
+*/

@@ -114,13 +114,6 @@
         
         let begin = function(image) {
             var count = 200;     
-            /*
-            let priors = getPriors(imageData.width, imageData.height);  
-            let scheduler = ApproximateBayes.createScheduler(200000000000, 700, .90);
-            let generator = new YearbookGenerator(bg, data, imageData.width, imageData.height);
-            let smcConfig = ApproximateBayes
-                .createSmcConfig(data, count, priors, scheduler, generator);
-            */
             let config = new YearbookConfig(image);
             let data = config.getData();
             let smc = ApproximateBayes.createSmc(config); 
@@ -129,7 +122,7 @@
             var iter = function() {
                 render(config, smc.getParticles());
                 if (smc.next()) {
-                    setTimeout(iter, 0);
+                    setTimeout(iter, 1);
                 }
             };
             iter();
