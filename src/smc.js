@@ -30,6 +30,32 @@
         this.getParticles = function() {
             return oldParticles;  
         };
+        
+        let add = function(a,b) {
+            return a+b;  
+        };
+        
+        let divBy = function(denom) {
+            return function(numer) {
+                return numer / denom;
+            };
+        };
+        
+        let multBy = function(a) {
+            return function(b) {
+                return a*b;
+            };
+        };
+        
+        let probabilityOfParticle = function(particles, parameters) {
+            let sum = 0;
+            for(let i = 0; i < particleCount; i++) {
+                let move = config.subtractParameters(parameters, particles[i].parameters);
+                sum = sum + particles[i].weight * config.probabilityOfMove(move);
+            }
+            if (sum == 0) { return Number.EPSILON; }
+            return sum;
+        };
 
         let sampleFromWeighted = function(particles) {
             let r = Math.random();
@@ -77,24 +103,29 @@
                 let move = config.getMove(oldParticle.parameters);
                 let newParams = config.moveParameters(oldParticle.parameters, move);
                 let priorProb = config.priorProbabilityOf(priors, newParams);
-                let importanceProb = probabilityOfParticle(oldParticles, newParams);
-                let newModel = config.generateModel(newParams);
-                let newDistance = config.compare(newModel, threshold);
+                if (priorProb > 0) {
+                    let newModel = config.generateModel(newParams);
+                    let importanceProb = probabilityOfParticle(oldParticles, newParams);
+                    let newDistance = config.compare(newModel, threshold);
 
-                if (newDistance <= threshold &&
-                    priorProb > 0 &&
-                    importanceProb > 0) 
-                {
-                    let newWeight = priorProb / importanceProb; 
-                    let newParticle = {
-                        parameters: newParams,
-                        model: newModel,
-                        distance: newDistance,
-                        weight: newWeight
-                    };
-                    newParticles.push(newParticle);
-                    i = i + 1;
-                    rejectCount = 0;
+                    //if (newDistance <= threshold && importanceProb > 0) {
+                    if (newDistance <= threshold) {
+                        let newWeight = priorProb / importanceProb; 
+                        let newParticle = {
+                            parameters: newParams,
+                            model: newModel,
+                            distance: newDistance,
+                            weight: newWeight
+                        };
+                        newParticles.push(newParticle);
+                        i = i + 1;
+                        rejectCount = 0;
+                    } else {
+                        rejectCount = rejectCount + 1;
+                        if (rejectCount > 1000) {
+                            throw "stuck";
+                        }
+                    }
                 } else {
                     rejectCount = rejectCount + 1;
                     if (rejectCount > 1000) {
@@ -113,31 +144,6 @@
         }
         
         this.next = _next;
-
-        let probabilityOfParticle = function(particles, parameters) {
-            let totalProb = 0; 
-            let len = particles.length;
-            for (let i = 0; i < len; i++) {
-                let particle = particles[i];
-                let move = config.subtractParameters(parameters, particle.parameters);
-                let prob = particle.weight * config.probabilityOfMove(move);
-                totalProb = totalProb + prob;
-            }
-            if (isNaN(totalProb)) throw 'Invalid Probablity';
-            return totalProb;
-        };
-    }
-    
-    function SmcConfig(
-        data, 
-        particleCount, 
-        priors, 
-        scheduler) 
-    {
-        this.data = data;
-        this.particleCount = particleCount;
-        this.priors = priors;
-        this.scheduler = scheduler;
     }
     
     // returns a threshold scheduler

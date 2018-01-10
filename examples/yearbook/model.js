@@ -224,19 +224,29 @@ function YearbookConfig(image) {
         return (dist < .006);
     };
     
+    let proposal = {
+        x: Distributions.createNormal(0,1),
+        y: Distributions.createNormal(0,1),
+        width: Distributions.createNormal(0,1),
+        height: Distributions.createNormal(0,1),
+        gap: Distributions.createNormal(0,1),
+        rows: Distributions.createNormal(0,1),
+        cols: Distributions.createNormal(0,1)
+    };
+    
     /*
     Samples from a distribution that determines
     the amount to perturb the parameters
     */
     this.getMove = function() {
         return new ModelParams(
-            randomStepByInteger(5),
-            randomStepByInteger(5),
-            randomStepByInteger(5),
-            randomStepByInteger(5),
-            randomStepByOne(),
-            randomStepByOne(),
-            randomStepByOne()
+            Math.round(proposal.x.sample()),
+            Math.round(proposal.y.sample()),
+            Math.round(proposal.width.sample()),
+            Math.round(proposal.height.sample()),
+            Math.round(proposal.gap.sample()),
+            Math.round(proposal.rows.sample()),
+            Math.round(proposal.cols.sample())
         );
     };
 
@@ -245,18 +255,13 @@ function YearbookConfig(image) {
     were perturbed by the specified amounts.
     */
     this.probabilityOfMove = function(move) {
-        let probInRange = function(min, max, value) {
-            if (value < min) { return 0; }
-            if (value > max) { return 0; }
-            return 1 / ((max - min) + 1);
-        };
-        return probInRange(-5, 5, move.x) * 
-             probInRange(-5, 5, move.y) * 
-             probInRange(-5, 5, move.width)* 
-             probInRange(-5, 5, move.height) * 
-             probInRange(-1, 1, move.gap) * 
-             probInRange(-1, 1, move.rows) * 
-             probInRange(-1, 1, move.cols) 
+        return proposal.x.densityAt(move.x) *
+            proposal.y.densityAt(move.y) *
+            proposal.width.densityAt(move.width) *
+            proposal.height.densityAt(move.height) *
+            proposal.gap.densityAt(move.gap) *
+            proposal.rows.densityAt(move.rows) *
+            proposal.cols.densityAt(move.cols);
     };
     
     this.priorProbabilityOf = function(priors, parameters) {

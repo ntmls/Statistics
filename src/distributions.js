@@ -147,12 +147,15 @@
         this.mean = mean;
         this.stdv = stdv;
         
-        var a = 1 / (stdv * (Math.sqrt(2.0 * Math.PI)));
-        var b = (2 * stdv);
-        var twoPi = Math.PI * 2;
+        let twoPi = Math.PI * 2;
+        let v = stdv * stdv;
+        let c = 1 / Math.sqrt(twoPi * v);
+        let twoV = 2*v;
         
         function densityAt(value) {
-            return a * Math.exp(-(((value - mean) * (value - mean))/b)); 
+            let a = (value - mean) * (value - mean);
+            let e = a / twoV;
+            return c * Math.exp(-e); 
         }
         
         this.sample = function() {
