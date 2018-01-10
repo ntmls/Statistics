@@ -201,8 +201,8 @@ function FitCircleConfig() {
 }
 
 let proposal = {
-    x: Distributions.createNormal(0, 25), 
-    y: Distributions.createNormal(0, 25),
+    x: Distributions.createNormal(0, 45), 
+    y: Distributions.createNormal(0, 45),
     radius: Distributions.createNormal(0, 5)
 };
 

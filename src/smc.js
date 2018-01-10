@@ -48,27 +48,13 @@
         };
         
         let probabilityOfParticle = function(particles, parameters) {
-            
-            // calculate all the probabilities of moving to these parameters
-            // ftom the previous distribution of particles;
-            let probs = particles.map(function(particle) {
-                let move = config.subtractParameters(parameters, particle.parameters);
-                return config.probabilityOfMove(move);
-            });
-            
-            // normalize those probabilities
-            let totalProb = probs.reduce(add, 0);
-            probs = probs.map(divBy(totalProb));
-            
-            // include the probability of picking the particle from tge previous
-            // set of particles. Aggregate the probabilities.
-            var result = 0;            
-            for (let i = 0; i < particleCount; i++) {
-                let particle = particles[i];
-                result = result + particle.weight * probs[i];
+            let sum = 0;
+            for(let i = 0; i < particleCount; i++) {
+                let move = config.subtractParameters(parameters, particles[i].parameters);
+                sum = sum + particles[i].weight * config.probabilityOfMove(move);
             }
-            if (isNaN(totalProb)) throw 'Invalid Probablity';
-            return result;
+            if (sum == 0) { return Number.EPSILON; }
+            return sum;
         };
 
         let sampleFromWeighted = function(particles) {
@@ -122,7 +108,8 @@
                     let importanceProb = probabilityOfParticle(oldParticles, newParams);
                     let newDistance = config.compare(newModel, threshold);
 
-                    if (newDistance <= threshold && importanceProb > 0) {
+                    //if (newDistance <= threshold && importanceProb > 0) {
+                    if (newDistance <= threshold) {
                         let newWeight = priorProb / importanceProb; 
                         let newParticle = {
                             parameters: newParams,
