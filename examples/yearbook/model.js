@@ -246,6 +246,16 @@ function YearbookConfig(image) {
         cols: Distributions.createNormal(0,1)
     };
     
+    let proposal = {
+        x: Distributions.createNormal(0,1),
+        y: Distributions.createNormal(0,1),
+        width: Distributions.createNormal(0,1),
+        height: Distributions.createNormal(0,1),
+        gap: Distributions.createNormal(0,1),
+        rows: Distributions.createNormal(0,1),
+        cols: Distributions.createNormal(0,1)
+    };
+    
     /*
     Samples from a distribution that determines
     the amount to perturb the parameters
