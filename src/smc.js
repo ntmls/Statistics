@@ -98,9 +98,10 @@
             let i = 0;
             let rejectCount = 0;
             let maxDist = 0;
+            config.next(oldParticles);
             while (i < particleCount) {
                 let oldParticle = sampleFromWeighted(oldParticles);
-                let move = config.getMove(oldParticle.parameters);
+                let move = config.getMove();
                 let newParams = config.moveParameters(oldParticle.parameters, move);
                 let priorProb = config.priorProbabilityOf(priors, newParams);
                 if (priorProb > 0) {

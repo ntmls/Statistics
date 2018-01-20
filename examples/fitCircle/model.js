@@ -88,7 +88,7 @@ function FitCircleConfig() {
         target: target,
         imageSamples: imageSamples
     };
-    let scheduler = ApproximateBayes.createScheduler(99999999, 10, .90);
+    let scheduler = ApproximateBayes.createScheduler(99999999, 10, .75);
     let dataLength = imageSamples.length;
     let bgCount = 0, nonBgCount = 0;
     for (let i = 0; i < dataLength; i++) {
@@ -198,6 +198,26 @@ function FitCircleConfig() {
         );
     }; 
     
+    let createProposalDistribution = function(values, cap) {
+        let valueMin = values.reduce(min, values[0]);
+        let valueMax = values.reduce(max, values[0]);
+        let stdv = Math.min((valueMax - valueMin) * .5, cap);
+        return Distributions.createNormal(0, stdv);
+    };
+    
+    this.next = function(particles) {
+        let xs = particles.map(function(p) { return p.parameters.x; });
+        let ys = particles.map(function(p) { return p.parameters.y; });
+        let rs = particles.map(function(p) { return p.parameters.radius; });
+        
+        proposal = {
+            x: createProposalDistribution(xs, 45), 
+            y: createProposalDistribution(ys, 45), 
+            radius: createProposalDistribution(rs, 15) 
+        };
+        
+    }; 
+    
 }
 
 let proposal = {
@@ -205,11 +225,3 @@ let proposal = {
     y: Distributions.createNormal(0, 45),
     radius: Distributions.createNormal(0, 5)
 };
-
-/*
-let proposal = {
-    x: Distributions.createTriangle(-60, 0, 60), 
-    y: Distributions.createTriangle(-60, 0, 60),
-    radius: Distributions.createTriangle(-15, 0, 15)
-}; 
-*/

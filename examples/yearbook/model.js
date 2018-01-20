@@ -155,6 +155,13 @@ let randomStepByInteger = function(number) {
     }
 };
 
+let isBackGroundColor = function(bgColor) {
+    return function(color) {
+        let dist = colorDistanceSquared(bgColor, color);
+        return (dist < .006);
+    };
+};
+
 function YearbookConfig(image) {
     
     var width = image.width;
@@ -163,6 +170,14 @@ function YearbookConfig(image) {
     let imageSamples = sampleImage(imageData);
     let dataLength = imageSamples.length;
     let bgColor = new Color(250, 250, 250);
+    let bgCount = 0, nonBgCount = 0;
+    for (let i = 0; i < dataLength; i++) {
+        if (isBackGroundColor(bgColor)(imageSamples[i].color)) {
+            bgCount += 1;
+        } else {
+            nonBgCount += 1;
+        }
+    }
     
     let data = {
         "image": image,
@@ -186,7 +201,7 @@ function YearbookConfig(image) {
     };
     
     this.getScheduler = function() {
-        return ApproximateBayes.createScheduler(200000000000, 700, .90);
+        return ApproximateBayes.createScheduler(200000000000, 700, .95);
     };
     
     this.generateParameters = function(priors) {
@@ -219,10 +234,7 @@ function YearbookConfig(image) {
         return toGrid(modelParams.rows);
     };
     
-    this.isBackGroundColor = function(color) {
-        let dist = colorDistanceSquared(bgColor, color);
-        return (dist < .006);
-    };
+
     
     let proposal = {
         x: Distributions.createNormal(0,1),
@@ -299,35 +311,64 @@ function YearbookConfig(image) {
     }; 
 
     this.compare = function(model, threshold) {
-        let sum = 0;
-        let maxX = 0;
-        let maxY = 0;
-        let cornerX = 0;
-        let cornerY = 0;
-        let countIn = 0;
-        let countOut = 0;
+        let inAndBg = 0,
+            inAndNotBg = 0,
+            outAndBg = 0,
+            outAndNotBg = 0;
         for(let i = 0; i < dataLength; i++) {
-            let sample = imageSamples[i];
+            let sample = data.imageSamples[i];
             let isin = isPointInModel(sample.point, model);
-            let isBg = this.isBackGroundColor(sample.color);
+            let isBg = isBackGroundColor(bgColor)(sample.color);
             if (isin) {
                 if (isBg) {
-                    sum = sum + 1;
-                } 
+                    inAndBg += 1;
+                } else {
+                    inAndNotBg += 1;
+                }
             } else {
-                if (!isBg) {
-                    sum = sum + 1;
+                if (isBg) {
+                    outAndBg += 1;
+                } else {
+                    outAndNotBg += 1;
                 }
             }
-            if (sample.point.x > maxX) { maxX = sample.point.x }
-            if (sample.point.y > maxY) { maxY = sample.point.y }
-
-            if (sum > threshold) { return sum; }
         }
-        let lastRect = model[model.length - 1]; 
-        if (lastRect.point.x + lastRect.width > maxX) { sum = sum * 10 }
-        if (lastRect.point.y + lastRect.height > maxY) { sum = sum * 10 }
-        return sum * sum;
+        let inCount = inAndBg + inAndNotBg;
+        let outCount = outAndBg + outAndNotBg;
+        let e1 = inCount - nonBgCount;
+        let e2 = outCount - bgCount;
+        let e3 = inAndBg;
+        let e4 = outAndNotBg;
+        return e1 * e1 + e2 * e2 + e3 * e3 + e4 * e4;
     };
+    
+    let createProposalDistribution = function(values, cap) {
+        let valueMin = values.reduce(min, values[0]);
+        let valueMax = values.reduce(max, values[0]);
+        let stdv = Math.min((valueMax - valueMin) * .5, cap);
+        return Distributions.createNormal(0, stdv);
+    };
+    
+    this.next = function(particles) {
+        
+        let xs = particles.map(function(p) { return p.parameters.x; });
+        let ys = particles.map(function(p) { return p.parameters.y; });
+        let ws = particles.map(function(p) { return p.parameters.width; });
+        let hs = particles.map(function(p) { return p.parameters.height; });
+        let gs = particles.map(function(p) { return p.parameters.gap; });
+        let rs = particles.map(function(p) { return p.parameters.rows; });
+        let cs = particles.map(function(p) { return p.parameters.cols; });
+        
+        proposal = {
+            x: createProposalDistribution(xs, 5), 
+            y: createProposalDistribution(ys, 5), 
+            width: createProposalDistribution(ws, 10),
+            height: createProposalDistribution(hs, 10),
+            gap: createProposalDistribution(gs, 1),
+            rows: createProposalDistribution(rs, 1),
+            cols: createProposalDistribution(cs, 1)
+        };
+        
+    }; 
     
 };

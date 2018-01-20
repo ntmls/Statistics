@@ -97,8 +97,8 @@
             // image samples
             let toPoint = function(x) { return x.point; };
             let bgColor = new Color(250, 250, 250);
-            let isBg = function(x) { return config.isBackGroundColor(x.color); };
-            let isNotBg = function(x) { return !config.isBackGroundColor(x.color); };
+            let isBg = function(x) { return isBackGroundColor(bgColor)(x.color); };
+            let isNotBg = function(x) { return !isBackGroundColor(bgColor)(x.color); };
             let ins = data.imageSamples.filter(isBg);
             ctx.strokeStyle = "blue";
             drawPoints(ctx)(ins.map(toPoint));
