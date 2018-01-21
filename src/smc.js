@@ -99,6 +99,8 @@
             let rejectCount = 0;
             let maxDist = 0;
             config.next(oldParticles);
+            
+            // resample
             while (i < particleCount) {
                 let oldParticle = sampleFromWeighted(oldParticles);
                 let move = config.getMove();
@@ -106,17 +108,15 @@
                 let priorProb = config.priorProbabilityOf(priors, newParams);
                 if (priorProb > 0) {
                     let newModel = config.generateModel(newParams);
-                    let importanceProb = probabilityOfParticle(oldParticles, newParams);
                     let newDistance = config.compare(newModel, threshold);
 
                     //if (newDistance <= threshold && importanceProb > 0) {
                     if (newDistance <= threshold) {
-                        let newWeight = priorProb / importanceProb; 
                         let newParticle = {
                             parameters: newParams,
                             model: newModel,
                             distance: newDistance,
-                            weight: newWeight
+                            prior: priorProb
                         };
                         newParticles.push(newParticle);
                         i = i + 1;
@@ -135,15 +135,29 @@
                 }
             }
             
+            // Convert the distance measure into an importance weight
+            let totWeight = 0;
+            for(i=0;i<particleCount;i++) {
+                newParticles[i].weight = 1 / (newParticles[i].distance + Number.EPSILON);
+                totWeight = totWeight + newParticles[i].weight;
+            }
+            for(i=0;i<particleCount;i++) {
+                newParticles[i].weight = newParticles[i].weight / totWeight;
+                newParticles[i].weight = newParticles[i].weight * probabilityOfParticle(
+                    oldParticles, 
+                    newParticles[i].parameters);
+                newParticles[i].weight = newParticles[i].prior / newParticles[i].weight;
+            }
+            newParticles = _normalizeWeights(newParticles);
+            
             if (!scheduler.stop(threshold)) {
-                oldParticles = sortByWeight(_normalizeWeights(newParticles));
+                oldParticles = sortByWeight(newParticles);
                 threshold = scheduler.next(threshold, newParticles); 
                 return true;
             } else {
                 return false; 
             };
         }
-        
         this.next = _next;
     }
     
@@ -159,11 +173,8 @@
                 let ds = samples.map(function(x) {
                     return x.distance;
                 });
-                let sorted = ds.sort(function(a,b) {
-                    return a - b;
-                });
-                let index = Math.floor(percent * sorted.length);
-                return sorted[index];
+                let maxDist = ds.reduce(max, ds[0]);
+                return Math.min(threshold * percent, maxDist);
             },
             stop: function(threshold, samples) {
                 if (threshold < minDistance) { 

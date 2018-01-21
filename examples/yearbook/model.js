@@ -234,23 +234,11 @@ function YearbookConfig(image) {
         return toGrid(modelParams.rows);
     };
     
-
-    
     let proposal = {
-        x: Distributions.createNormal(0,1),
-        y: Distributions.createNormal(0,1),
-        width: Distributions.createNormal(0,1),
-        height: Distributions.createNormal(0,1),
-        gap: Distributions.createNormal(0,1),
-        rows: Distributions.createNormal(0,1),
-        cols: Distributions.createNormal(0,1)
-    };
-    
-    let proposal = {
-        x: Distributions.createNormal(0,1),
-        y: Distributions.createNormal(0,1),
-        width: Distributions.createNormal(0,1),
-        height: Distributions.createNormal(0,1),
+        x: Distributions.createNormal(0,2),
+        y: Distributions.createNormal(0,2),
+        width: Distributions.createNormal(0,5),
+        height: Distributions.createNormal(0,5),
         gap: Distributions.createNormal(0,1),
         rows: Distributions.createNormal(0,1),
         cols: Distributions.createNormal(0,1)
@@ -360,7 +348,7 @@ function YearbookConfig(image) {
     };
     
     this.next = function(particles) {
-        
+        /*
         let xs = particles.map(function(p) { return p.parameters.x; });
         let ys = particles.map(function(p) { return p.parameters.y; });
         let ws = particles.map(function(p) { return p.parameters.width; });
@@ -378,6 +366,7 @@ function YearbookConfig(image) {
             rows: createProposalDistribution(rs, 1),
             cols: createProposalDistribution(cs, 1)
         };
+        */
         
     }; 
     
