@@ -340,31 +340,35 @@ function YearbookConfig(image) {
         return e1 * e1 + e2 * e2 + e3 * e3 + e4 * e4;
     };
     
-    let createProposalDistribution = function(values, cap) {
-        let valueMin = values.reduce(min, values[0]);
-        let valueMax = values.reduce(max, values[0]);
-        let stdv = Math.min((valueMax - valueMin) * .5, cap);
+    /*
+    let createProposalDistribution = function(particles, selector, cap) {
+        let values = particles.map(function(p) { return selector(p) * p.weight; });
+        let mean = values.reduce(add, 0) / values.length;
+        let errsqrd = values.map(function(v) { return (v-mean)*(v-mean); });
+        let variance = errsqrd.reduce(add, 0) / values.length;
+        let stdv = Math.min(Math.sqrt(variance), cap);
         return Distributions.createNormal(0, stdv);
     };
+    */
     
     this.next = function(particles) {
         /*
-        let xs = particles.map(function(p) { return p.parameters.x; });
-        let ys = particles.map(function(p) { return p.parameters.y; });
-        let ws = particles.map(function(p) { return p.parameters.width; });
-        let hs = particles.map(function(p) { return p.parameters.height; });
-        let gs = particles.map(function(p) { return p.parameters.gap; });
-        let rs = particles.map(function(p) { return p.parameters.rows; });
-        let cs = particles.map(function(p) { return p.parameters.cols; });
+        let xselector = function(p) { return p.parameters.x; };
+        let yselector = function(p) { return p.parameters.y; };
+        let wselector = function(p) { return p.parameters.width; };
+        let hselector = function(p) { return p.parameters.height; };
+        let gselector = function(p) { return p.parameters.gap; };
+        let rselector = function(p) { return p.parameters.rows; };
+        let cselector = function(p) { return p.parameters.cols; };
         
         proposal = {
-            x: createProposalDistribution(xs, 5), 
-            y: createProposalDistribution(ys, 5), 
-            width: createProposalDistribution(ws, 10),
-            height: createProposalDistribution(hs, 10),
-            gap: createProposalDistribution(gs, 1),
-            rows: createProposalDistribution(rs, 1),
-            cols: createProposalDistribution(cs, 1)
+            x: createProposalDistribution(particles, xselector, 100), 
+            y: createProposalDistribution(particles, yselector, 100), 
+            width: createProposalDistribution(particles, wselector, 100),
+            height: createProposalDistribution(particles, hselector, 100),
+            gap: createProposalDistribution(particles, gselector, 100),
+            rows: createProposalDistribution(particles, rselector, 100),
+            cols: createProposalDistribution(particles, cselector, 100)
         };
         */
         
