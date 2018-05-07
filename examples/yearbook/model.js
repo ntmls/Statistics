@@ -131,12 +131,14 @@ function Color(red, green, blue) {
     this.blue = blue; 
 }; 
 
+/*
 let colorDistanceSquared = function(a, b) {
     let dr = a.red - b.red; 
     let dg = a.green - b.green;
     let db = a.blue - b.blue; 
     return (dr*dr + dg*dg + db*db) / 195075; 
 };
+*/
 
 let randomStepByOne = function() {
     let r = Math.random();
@@ -155,24 +157,35 @@ let randomStepByInteger = function(number) {
     }
 };
 
-let isBackGroundColor = function(bgColor) {
-    return function(color) {
-        let dist = colorDistanceSquared(bgColor, color);
-        return (dist < .006);
-    };
+let isBackGroundColor = function(a, b) {
+    const thresh = 1070; // 195075 * .006 = 1070
+    let delta = a.red - b.red;
+    let dr2 = delta * delta;
+    if (dr2 > thresh) { return false; }
+    delta = a.green - b.green;
+    let dg2 = delta * delta;
+    if (dg2 > thresh) { return false; }
+    delta  = a.blue - b.blue
+    let db2 = delta * delta; 
+    if (db2 > thresh) { return false; }
+    let distSquared = (dr2 + dg2 + db2); 
+    if (distSquared < thresh) {
+        return true;
+    } else {
+        return false;
+    }
 };
 
 function YearbookConfig(image) {
-    
+    let bgColor = new Color(250, 250, 250);
     var width = image.width;
     var height = image.height;
     let imageData = getImageData(image);
-    let imageSamples = sampleImage(imageData);
+    let imageSamples = determineBackground(sampleImage(imageData));
     let dataLength = imageSamples.length;
-    let bgColor = new Color(250, 250, 250);
     let bgCount = 0, nonBgCount = 0;
     for (let i = 0; i < dataLength; i++) {
-        if (isBackGroundColor(bgColor)(imageSamples[i].color)) {
+        if (imageSamples[i].isBackground) {
             bgCount += 1;
         } else {
             nonBgCount += 1;
@@ -195,6 +208,16 @@ function YearbookConfig(image) {
             cols: Distributions.createUniform(4, 7)
         };
     };
+    
+    function determineBackground(samples) {
+        return samples.map(function(x) {
+            return {
+                point: x.point,
+                color: x.color,
+                isBackground: isBackGroundColor(bgColor, x.color)
+            };
+        });
+    }
     
     this.getData = function() {
         return data;
@@ -316,15 +339,15 @@ function YearbookConfig(image) {
         for(let i = 0; i < dataLength; i++) {
             let sample = data.imageSamples[i];
             let isin = isPointInModel(sample.point, model);
-            let isBg = isBackGroundColor(bgColor)(sample.color);
+            //let isBg = isBackGroundColor(bgColor, sample.color);
             if (isin) {
-                if (isBg) {
+                if (sample.isBackground) {
                     inAndBg += 1;
                 } else {
                     inAndNotBg += 1;
                 }
             } else {
-                if (isBg) {
+                if (sample.isBackground) {
                     outAndBg += 1;
                 } else {
                     outAndNotBg += 1;
