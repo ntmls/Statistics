@@ -106,12 +106,12 @@ QUnit.module("Distributions", function() {
         
         var round4 = function(n) { return round(n, 4); };
         
-        assert.equal(round4(distribution.densityAt(0)), .0683);
-        assert.equal(round4(distribution.densityAt(1)), .1126);
+        assert.equal(round4(distribution.densityAt(0)), .1065);
+        assert.equal(round4(distribution.densityAt(1)), .1258);
         assert.equal(round4(distribution.densityAt(2)), .133);
-        assert.equal(round4(distribution.densityAt(3)), .1126);
-        assert.equal(round4(distribution.densityAt(4)), .0683);
-        assert.equal(round4(distribution.densityAt(5)), .0297);
+        assert.equal(round4(distribution.densityAt(3)), .1258);
+        assert.equal(round4(distribution.densityAt(4)), .1065);
+        assert.equal(round4(distribution.densityAt(5)), .0807);
     });
     
     QUnit.test("factorial", function( assert ) {
