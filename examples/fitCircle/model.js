@@ -63,7 +63,7 @@ function FitCircleConfig() {
     let createTargetImage = function(width, height, target) {
         var points = poisson2d.create(width, height, 7, 60);
         var count = points.length;
-        var result = [];
+        var result = new Array(count);
         for(var i = 0; i < count; i++) {
             let point = points[i];
             var color;
@@ -72,10 +72,10 @@ function FitCircleConfig() {
             } else {
                 color = bgColor;
             }
-            result.push({
+            result[i] = {
                 point: point,
                 color: color
-            });
+            };
         }
         return result;
     };

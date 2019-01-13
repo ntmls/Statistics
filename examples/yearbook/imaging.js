@@ -22,20 +22,20 @@ let getPixel = function(imageData) {
 
 // samples the pixels whithin an image.
 let sampleImage = function(imageData) {
-    let result = [];
     let points = poisson2d.create(
         imageData.width, 
         imageData.height, 
         7, 60);
     let count = points.length;
+    let result = new Array(count);
     for(let i = 0; i < count; i++) {
         let point = new Point(
             Math.floor(points[i].x), 
             Math.floor(points[i].y));
-        result.push({
-            "point": point,
-            "color": getPixel(imageData)(point)
-        });
+        result[i] = {
+            point: point,
+            color: getPixel(imageData)(point)
+        };
     }
     return result;
 };

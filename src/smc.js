@@ -11,7 +11,7 @@
         
         this.initializeParticles = function(_particleCount) {
             particleCount = _particleCount;
-            let particles = [];
+            let particles = new Array(_particleCount);
             for (let i = 0; i < particleCount; i++) {
                 let params = config.generateParameters(priors);
                 let model = config.generateModel(params);
@@ -22,7 +22,7 @@
                     distance: distance,
                     weight: 1.0
                 };
-                particles.push(particle);
+                particles[i] = particle;
             }
             oldParticles = _normalizeWeights(particles);
         };
@@ -94,7 +94,7 @@
         this.normalizeWeights = _normalizeWeights;
         
         function _next() {
-            let newParticles = [];
+            let newParticles = new Array(particleCount);
             let i = 0;
             let rejectCount = 0;
             let maxDist = 0;
@@ -118,7 +118,7 @@
                             distance: newDistance,
                             prior: priorProb
                         };
-                        newParticles.push(newParticle);
+                        newParticles[i] = newParticle;
                         i = i + 1;
                         rejectCount = 0;
                     } else {
